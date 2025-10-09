@@ -1,0 +1,114 @@
+import pdfplumber
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+import json
+
+MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
+
+# --- Load LLaMA ---
+def load_llama(model_name=MODEL_NAME):
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        device_map="auto",
+        torch_dtype="auto"
+    )
+    return tokenizer, model
+
+# --- Extract text from PDF ---
+def extract_text_from_pdf(pdf_path):
+    text = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+    return text
+
+# --- Parse resume with LLaMA ---
+def parse_resume_llama(resume_text):
+    tokenizer, model = load_llama()
+
+    system_message = {
+        "role": "system",
+        "content": "You are a resume parser. Extract all information from the resume and output ONLY valid JSON."
+    }
+
+    user_message = {
+        "role": "user",
+        "content": f"""
+Fill in the following JSON schema using information from the resume below. 
+Replace all placeholders with actual data. If information is missing, use null.
+Return only valid JSON.
+
+{{
+    "Name": "FILL_HERE",
+    "Email": "FILL_HERE",
+    "Phone": "FILL_HERE",
+    "LinkedIn": "FILL_HERE",
+    "GitHub": "FILL_HERE",
+    "Education": [
+        {{"Degree": "FILL_HERE", "Institution": "FILL_HERE", "Year": "FILL_HERE"}}
+    ],
+    "Experience": [
+        {{"Company": "FILL_HERE", "Role": "FILL_HERE", "Years": "FILL_HERE", "Role Summary": "FILL_HERE"}}
+    ],
+    "Projects": [
+        {{"Title": "FILL_HERE", "Description": "FILL_HERE", "Technologies": []}}
+    ],
+    "Skills": [],
+    "Extracurriculars": []
+}}
+
+Resume Text:
+{resume_text}
+"""
+    }
+
+    prompt = system_message["content"] + "\n\n" + user_message["content"]
+
+    generator = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        max_new_tokens=2000,
+        temperature=0.1,
+        top_p=0.9
+    )
+
+    output = generator(prompt)[0]["generated_text"]
+
+    # --- Updated extraction logic ---
+    start_marker = "```json"
+    end_marker = "```"
+
+    start = output.find(start_marker)
+    end = output.find(end_marker, start + len(start_marker))
+    json_text = output[start+8:end]
+
+    try:
+        data = json.loads(json_text)
+    except json.JSONDecodeError:
+        print("⚠️ Failed to parse JSON. Returning raw output")
+        print(output)
+        print("JSON")
+        print(json_text)
+        return None
+
+    return data
+
+# --- Main ---
+if __name__ == "__main__":
+    pdf_path = "RahasyaBarkurResume.pdf"  # replace with your PDF path
+    output_file = "parsed_resume.json"
+
+    resume_text = extract_text_from_pdf(pdf_path)
+
+    if not resume_text.strip():
+        print("⚠️ No text extracted from PDF. Check PDF format.")
+    else:
+        parsed_data = parse_resume_llama(resume_text)
+        if parsed_data:
+            # Save only JSON to file
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(parsed_data, f, indent=4)
+            print(f"✅ Parsed JSON saved to {output_file}")
