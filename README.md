@@ -91,6 +91,23 @@ npm start
 
 ### 5. Database Setup
 
+Install Postgres:
+
+```bash
+# On macOS with Homebrew:
+brew install postgresql@14
+```
+
+To verify that it works
+```bash
+psql --version
+```
+
+To check if you can connect to postgres
+```bash
+psql postgres
+```
+
 Make sure PostgreSQL is running:
 
 ```bash
@@ -100,7 +117,7 @@ brew services start postgresql@14
 # Create database
 psql postgres -c "CREATE DATABASE coverfolio_db;"
 ```
-
+Note: A superuser with username: "admin" and password: "root@123" has been created beforehand. Email is not configured yet.
 ## Project Structure
 
 ```
