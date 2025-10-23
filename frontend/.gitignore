@@ -1,0 +1,111 @@
+
+
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+env/
+ENV/
+.venv
+
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+package-lock.json
+.eslintcache
+
+
+# Testing
+coverage/
+.coverage
+.pytest_cache/
+htmlcov/
+
+
+# Production
+/build
+/dist
+*.tsbuildinfo
+
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+
+# Logs
+logs/
+*.log
+
+
+# OS
+Thumbs.db
+Desktop.ini
+
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+
+# React
+.eslintrc.json
+react-app-env.d.ts
+
+
+
+
+
