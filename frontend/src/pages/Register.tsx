@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,39 +45,79 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
 
 
-  // Client-side validation
-  if (!email) {
-    setError('Please enter your email address');
-    return;
-  }
-   if (!email.includes('@') || !email.includes('.')) {
-    setError('Please enter a valid email address (e.g., name@example.com)');
-    return;
-  }
-   if (!password) {
-    setError('Please enter a password');
-    return;
-  }
+ // Client-side validation
+ // Validate first name
+ if (!firstName || firstName.trim() === '') {
+   setError('Please enter your first name');
+   return;
+ }
+
+
+ if (firstName.trim().length < 2) {
+   setError('First name must be at least 2 characters long');
+   return;
+ }
+
+
+ if (!/^[a-zA-Z\s'-]+$/.test(firstName.trim())) {
+   setError('First name can only contain letters, spaces, hyphens, and apostrophes');
+   return;
+ }
+
+
+ // Validate last name
+ if (!lastName || lastName.trim() === '') {
+   setError('Please enter your last name');
+   return;
+ }
+
+
+ if (lastName.trim().length < 2) {
+   setError('Last name must be at least 2 characters long');
+   return;
+ }
+
+
+ if (!/^[a-zA-Z\s'-]+$/.test(lastName.trim())) {
+   setError('Last name can only contain letters, spaces, hyphens, and apostrophes');
+   return;
+ }
+
+
+ // Validate email
+ if (!email) {
+   setError('Please enter your email address');
+   return;
+ }
+  if (!email.includes('@') || !email.includes('.')) {
+   setError('Please enter a valid email address (e.g., name@example.com)');
+   return;
+ }
+  // Validate password
+ if (!password) {
+   setError('Please enter a password');
+   return;
+ }
 
 
 
 
-  if (password.length < 8) {
-    setError('Password must be at least 8 characters long');
-    return;
-  }
-   if (!password2) {
-    setError('Please confirm your password');
-    return;
-  }
+ if (password.length < 8) {
+   setError('Password must be at least 8 characters long');
+   return;
+ }
+  if (!password2) {
+   setError('Please confirm your password');
+   return;
+ }
 
 
 
 
-  if (password !== password2) {
-    setError('Passwords do not match. Please make sure both passwords are identical.');
-    return;
-  }
+ if (password !== password2) {
+   setError('Passwords do not match. Please make sure both passwords are identical.');
+   return;
+ }
 
 
 
@@ -124,9 +162,26 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
 return (
   <div style={styles.container}>
+    {/* Floating decorative shapes */}
+    <div style={styles.shape1}></div>
+    <div style={styles.shape2}></div>
+    <div style={styles.shape3}></div>
+    <div style={styles.shape4}></div>
+
+
     {error && <ErrorPopup message={error} onClose={handleCloseError} />}
   
     <div style={styles.card}>
+      {/* Coverfolio Branding */}
+      <div style={styles.brandingSection}>
+        <div style={styles.logoIconContainer}>
+          <span style={styles.logoIcon}>📁</span>
+        </div>
+        <h2 style={styles.brandName}>Coverfolio</h2>
+        <p style={styles.brandTagline}>✨ Create. Impress. Succeed</p>
+      </div>
+
+
       <h1 style={styles.title}>Create Account</h1>
       <p style={styles.subtitle}>Sign up to get started</p>
 
@@ -239,8 +294,53 @@ container: {
   justifyContent: 'center',
   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   padding: '20px',
+  position: 'relative' as 'relative',
+  overflow: 'hidden',
+},
+// Floating decorative shapes
+shape1: {
+  position: 'absolute' as 'absolute',
+  top: '10%',
+  left: '5%',
+  width: '250px',
+  height: '250px',
+  borderRadius: '50%',
+  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)',
+  pointerEvents: 'none' as 'none',
+},
+shape2: {
+  position: 'absolute' as 'absolute',
+  top: '60%',
+  right: '8%',
+  width: '200px',
+  height: '200px',
+  borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
+  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%)',
+  pointerEvents: 'none' as 'none',
+},
+shape3: {
+  position: 'absolute' as 'absolute',
+  bottom: '10%',
+  left: '10%',
+  width: '180px',
+  height: '180px',
+  borderRadius: '63% 37% 54% 46% / 55% 48% 52% 45%',
+  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)',
+  pointerEvents: 'none' as 'none',
+},
+shape4: {
+  position: 'absolute' as 'absolute',
+  top: '30%',
+  right: '15%',
+  width: '150px',
+  height: '150px',
+  borderRadius: '50%',
+  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%)',
+  pointerEvents: 'none' as 'none',
 },
 card: {
+  position: 'relative' as 'relative',
+  zIndex: 1,
   backgroundColor: 'white',
   borderRadius: '12px',
   padding: '40px',
@@ -248,8 +348,47 @@ card: {
   width: '100%',
   boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
 },
-title: {
+// Branding section
+brandingSection: {
+  display: 'flex',
+  flexDirection: 'column' as 'column',
+  alignItems: 'center',
+  marginBottom: '32px',
+  paddingBottom: '24px',
+  borderBottom: '2px solid #f7fafc',
+},
+logoIconContainer: {
+  width: '64px',
+  height: '64px',
+  borderRadius: '16px',
+  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: '16px',
+  boxShadow: '0 8px 24px rgba(102, 126, 234, 0.35)',
+},
+logoIcon: {
+  fontSize: '32px',
+},
+brandName: {
   fontSize: '28px',
+  fontWeight: '800',
+  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  margin: 0,
+  marginBottom: '8px',
+  letterSpacing: '-0.5px',
+},
+brandTagline: {
+  fontSize: '13px',
+  color: '#718096',
+  margin: 0,
+  fontWeight: '500',
+},
+title: {
+  fontSize: '24px',
   fontWeight: 'bold',
   marginBottom: '8px',
   color: '#1a202c',

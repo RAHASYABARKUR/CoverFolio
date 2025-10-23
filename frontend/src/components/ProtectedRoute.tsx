@@ -1,53 +1,45 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute: React.FC = () => {
+ const { isAuthenticated, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.spinner}></div>
-        <p style={styles.loadingText}>Loading...</p>
-      </div>
-    );
-  }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+ if (loading) {
+   return (
+     <div style={styles.loadingContainer}>
+       <div style={styles.spinner}></div>
+       <p>Loading...</p>
+     </div>
+   );
+ }
 
-  return <>{children}</>;
+
+ return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
+
 
 const styles: { [key: string]: React.CSSProperties } = {
-  loadingContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  },
-  spinner: {
-    width: '40px',
-    height: '40px',
-    border: '4px solid rgba(255, 255, 255, 0.3)',
-    borderTop: '4px solid white',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-    marginBottom: '16px',
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: '16px',
-    fontWeight: '500',
-  },
+ loadingContainer: {
+   display: 'flex',
+   flexDirection: 'column',
+   justifyContent: 'center',
+   alignItems: 'center',
+   height: '100vh',
+   gap: '20px',
+ },
+ spinner: {
+   border: '4px solid #f3f3f3',
+   borderTop: '4px solid #3498db',
+   borderRadius: '50%',
+   width: '40px',
+   height: '40px',
+   animation: 'spin 1s linear infinite',
+ },
 };
 
+
 export default ProtectedRoute;
+
