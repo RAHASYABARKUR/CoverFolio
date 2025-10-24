@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 import ErrorPopup from '../components/ErrorPopup';
 
@@ -95,6 +96,9 @@ const Dashboard: React.FC = () => {
         <div style={styles.headerContent}>
           <h1 style={styles.title}>CoverFolio Dashboard</h1>
           <div style={styles.userInfo}>
+            <Link to="/dashboard/portfolio" style={styles.portfolioLink}>
+              📁 My Portfolio
+            </Link>
             <span style={styles.welcomeText}>
               Welcome, {user?.first_name || user?.email}!
             </span>
@@ -209,6 +213,19 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     gap: '16px',
+  },
+  portfolioLink: {
+    backgroundColor: '#667eea',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    textDecoration: 'none',
+    fontSize: '14px',
+    fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    transition: 'background-color 0.2s',
   },
   welcomeText: {
     color: '#4a5568',
