@@ -7,7 +7,6 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Portfolio from './pages/Portfolio';
 
 
 const App: React.FC = () => {
@@ -23,7 +22,9 @@ const App: React.FC = () => {
          {/* Protected Routes (require authentication) */}
          <Route element={<ProtectedRoute />}>
            <Route path="/dashboard" element={<Dashboard />} />
-           <Route path="/dashboard/portfolio" element={<Portfolio />} />
+           <Route path="/dashboard/portfolio" element={<Dashboard />} />
+           <Route path="/dashboard/resumes" element={<Dashboard />} />
+           <Route path="/dashboard/portfolio/preview/:resumeId" element={<Dashboard />} />
            <Route path="/dashboard/coverletter" element={<Dashboard />} />
          </Route>
         
