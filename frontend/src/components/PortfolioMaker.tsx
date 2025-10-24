@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 
 
 const PortfolioMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+ const navigate = useNavigate();
  const [selectedFile, setSelectedFile] = useState<File | null>(null);
  const [hobbies, setHobbies] = useState('');
  const [additionalInfo, setAdditionalInfo] = useState('');
+ const [uploading, setUploading] = useState(false);
+ const [error, setError] = useState('');
 
 
  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -15,13 +20,43 @@ const PortfolioMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
  };
 
 
- const handleFileUpload = () => {
-   if (selectedFile) {
-     // TODO: Implement file upload logic
-     console.log('Uploading file:', selectedFile.name);
-     console.log('Hobbies:', hobbies);
-     console.log('Additional Info:', additionalInfo);
-     alert('Resume upload functionality coming soon!');
+ const handleFileUpload = async () => {
+   if (!selectedFile) return;
+
+
+   setUploading(true);
+   setError('');
+
+
+   try {
+     // TODO: Uncomment when backend is ready
+     // const formData = new FormData();
+     // formData.append('file', selectedFile);
+     // if (hobbies) formData.append('hobbies', hobbies);
+     // if (additionalInfo) formData.append('additional_info', additionalInfo);
+    
+     // const response = await api.post('/resumes/upload/', formData, {
+     //   headers: {
+     //     'Content-Type': 'multipart/form-data',
+     //   },
+     // });
+    
+     // Navigate to the portfolio editor page after successful upload
+     // navigate(`/dashboard/portfolio/preview/${response.data.id}`);
+    
+     // Mock upload for now
+     await new Promise(resolve => setTimeout(resolve, 1000));
+    
+     // Mock resume ID for now
+     const mockResumeId = Date.now();
+    
+     // Navigate directly to the portfolio editor page
+     navigate(`/dashboard/portfolio/preview/${mockResumeId}`);
+   } catch (err: any) {
+     setError(err.response?.data?.error || 'Failed to upload resume');
+     alert(error || 'Failed to upload resume. Please try again.');
+   } finally {
+     setUploading(false);
    }
  };
 
@@ -111,29 +146,29 @@ const PortfolioMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
          onClick={handleFileUpload}
          style={{
            ...styles.submitButton,
-           ...(selectedFile ? {} : {
+           ...((selectedFile && !uploading) ? {} : {
              backgroundColor: '#cbd5e0',
              cursor: 'not-allowed',
              boxShadow: 'none',
            })
          }}
-         disabled={!selectedFile}
+         disabled={!selectedFile || uploading}
          onMouseEnter={(e) => {
-           if (selectedFile) {
+           if (selectedFile && !uploading) {
              e.currentTarget.style.backgroundColor = '#38a169';
              e.currentTarget.style.transform = 'translateY(-2px)';
              e.currentTarget.style.boxShadow = '0 6px 20px rgba(72, 187, 120, 0.4)';
            }
          }}
          onMouseLeave={(e) => {
-           if (selectedFile) {
+           if (selectedFile && !uploading) {
              e.currentTarget.style.backgroundColor = '#48bb78';
              e.currentTarget.style.transform = 'translateY(0)';
              e.currentTarget.style.boxShadow = '0 4px 12px rgba(72, 187, 120, 0.3)';
            }
          }}
        >
-         {selectedFile ? 'Generate Portfolio →' : 'Please upload a resume first'}
+         {uploading ? 'Uploading...' : selectedFile ? 'Generate Portfolio →' : 'Please upload a resume first'}
        </button>
      </div>
    </div>

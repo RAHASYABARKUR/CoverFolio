@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PortfolioMaker from '../components/PortfolioMaker';
 import CoverLetterMaker from '../components/CoverLetterMaker';
+import PortfolioManager from '../components/PortfolioManager';
+import PortfolioEditor from '../components/PortfolioEditor';
 
 
 const Dashboard: React.FC = () => {
@@ -20,6 +22,8 @@ const Dashboard: React.FC = () => {
  // Determine current view based on URL
  const getCurrentView = () => {
    if (location.pathname === '/dashboard/portfolio') return 'portfolio';
+   if (location.pathname === '/dashboard/resumes') return 'resumes';
+   if (location.pathname.startsWith('/dashboard/portfolio/preview/')) return 'preview';
    if (location.pathname === '/dashboard/coverletter') return 'coverletter';
    return 'home';
  };
@@ -37,46 +41,47 @@ const Dashboard: React.FC = () => {
      </div>
 
 
-     <div style={styles.statsBar}>
-       <div
-         style={styles.statItem}
-         onMouseEnter={(e) => {
-           e.currentTarget.style.transform = 'translateY(-4px)';
-           e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-         }}
-         onMouseLeave={(e) => {
-           e.currentTarget.style.transform = 'translateY(0)';
-           e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
-         }}
-       >
-         <div style={styles.statIconCircle}>
-           <div style={styles.statIcon}>📊</div>
-         </div>
-         <div>
-           <div style={styles.statValue}>0</div>
-           <div style={styles.statLabel}>Portfolios Created</div>
-         </div>
+   <div style={styles.statsBar}>
+     <div
+       style={styles.statItem}
+       onClick={() => navigate('/dashboard/resumes')}
+       onMouseEnter={(e) => {
+         e.currentTarget.style.transform = 'translateY(-4px)';
+         e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+       }}
+       onMouseLeave={(e) => {
+         e.currentTarget.style.transform = 'translateY(0)';
+         e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
+       }}
+     >
+       <div style={styles.statIconCircle}>
+         <div style={styles.statIcon}>📊</div>
        </div>
-       <div
-         style={styles.statItem}
-         onMouseEnter={(e) => {
-           e.currentTarget.style.transform = 'translateY(-4px)';
-           e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-         }}
-         onMouseLeave={(e) => {
-           e.currentTarget.style.transform = 'translateY(0)';
-           e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
-         }}
-       >
-         <div style={styles.statIconCircle}>
-           <div style={styles.statIcon}>📝</div>
-         </div>
-         <div>
-           <div style={styles.statValue}>0</div>
-           <div style={styles.statLabel}>Cover Letters</div>
-         </div>
+       <div>
+         <div style={styles.statValue}>0</div>
+         <div style={styles.statLabel}>Portfolio Projects</div>
        </div>
      </div>
+     <div
+       style={styles.statItem}
+       onMouseEnter={(e) => {
+         e.currentTarget.style.transform = 'translateY(-4px)';
+         e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+       }}
+       onMouseLeave={(e) => {
+         e.currentTarget.style.transform = 'translateY(0)';
+         e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
+       }}
+     >
+       <div style={styles.statIconCircle}>
+         <div style={styles.statIcon}>📝</div>
+       </div>
+       <div>
+         <div style={styles.statValue}>0</div>
+         <div style={styles.statLabel}>Cover Letters</div>
+       </div>
+     </div>
+   </div>
 
 
      <h2 style={styles.sectionTitle}>What would you like to create today?</h2>
@@ -250,6 +255,8 @@ const Dashboard: React.FC = () => {
      <main style={styles.main}>
        {currentView === 'home' && renderHomeView()}
        {currentView === 'portfolio' && <PortfolioMaker onBack={() => navigate('/dashboard')} />}
+       {currentView === 'resumes' && <PortfolioManager onBack={() => navigate('/dashboard')} />}
+       {currentView === 'preview' && <PortfolioEditor />}
        {currentView === 'coverletter' && <CoverLetterMaker onBack={() => navigate('/dashboard')} />}
      </main>
    </div>
@@ -687,3 +694,8 @@ const styles: { [key: string]: React.CSSProperties } = {
 
 
 export default Dashboard;
+
+
+
+
+
