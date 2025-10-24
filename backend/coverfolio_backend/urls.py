@@ -10,6 +10,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('authentication.urls')),
     path('api/resume/', include('resume_parser.urls')),
+    path('api/portfolio/', include('portfolio.urls')),
 ]
 
 # Serve media files in development

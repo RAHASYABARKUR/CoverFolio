@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     # Local apps
     'authentication',
     'resume_parser',
+    'portfolio',
 ]
 
 MIDDLEWARE = [
