@@ -6,6 +6,7 @@ export interface Portfolio {
   user_name: string;
   title: string;
   bio: string;
+  profile_image?: string;
   location: string;
   website: string;
   github: string;
@@ -19,11 +20,16 @@ export interface Portfolio {
   experiences?: Experience[];
   education?: Education[];
   certifications?: Certification[];
+  hobbies?: Hobby[];
+  awards?: Award[];
+  contacts?: Contact[];
   projects_count?: number;
   skills_count?: number;
   experiences_count?: number;
   education_count?: number;
   certifications_count?: number;
+  hobbies_count?: number;
+  awards_count?: number;
 }
 
 export interface Project {
@@ -37,9 +43,9 @@ export interface Project {
   project_url?: string;
   demo_url?: string;
   github_url?: string;
-  status: 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
-  is_featured: boolean;
-  display_order: number;
+  status: 'in_progress' | 'completed' | 'planned';
+  featured: boolean;
+  order: number;
   created_at: string;
   updated_at: string;
   duration?: string;
@@ -50,7 +56,7 @@ export interface Skill {
   portfolio: number;
   name: string;
   category: 'programming' | 'framework' | 'tool' | 'soft_skill' | 'language' | 'other';
-  proficiency: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  proficiency_level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   years_of_experience?: number;
   created_at: string;
   updated_at: string;
@@ -67,8 +73,6 @@ export interface Experience {
   end_date?: string;
   is_current: boolean;
   description: string;
-  responsibilities?: string;
-  achievements?: string;
   technologies: string[];
   company_url?: string;
   created_at: string;
@@ -80,7 +84,7 @@ export interface Education {
   id: number;
   portfolio: number;
   institution: string;
-  degree: 'high_school' | 'associate' | 'bachelors' | 'masters' | 'phd' | 'bootcamp' | 'certification' | 'other';
+  degree: 'high_school' | 'associate' | 'bachelor' | 'master' | 'phd' | 'certificate' | 'bootcamp' | 'other';
   field_of_study: string;
   start_date: string;
   end_date?: string;
@@ -108,6 +112,21 @@ export interface Certification {
   is_expired?: boolean;
 }
 
+export interface Hobby {
+  id: number;
+  portfolio: number;
+  name: string;
+  description: string;
+  category: 'sports' | 'arts' | 'volunteer' | 'club' | 'creative' | 'other';
+  start_date?: string;
+  end_date?: string;
+  is_current: boolean;
+  achievements?: string;
+  created_at: string;
+  updated_at: string;
+  duration?: string;
+}
+
 // Form data types (for creating/updating)
 export interface PortfolioFormData {
   title: string;
@@ -124,19 +143,19 @@ export interface ProjectFormData {
   title: string;
   description: string;
   tech_stack: string[];
-  start_date: string;
-  end_date?: string;
+  start_date?: string | null;
+  end_date?: string | null;
   project_url?: string;
   demo_url?: string;
   github_url?: string;
-  status: 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
-  is_featured: boolean;
+  status: 'in_progress' | 'completed' | 'planned';
+  featured: boolean;
 }
 
 export interface SkillFormData {
   name: string;
   category: 'programming' | 'framework' | 'tool' | 'soft_skill' | 'language' | 'other';
-  proficiency: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  proficiency_level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   years_of_experience?: number;
 }
 
@@ -149,18 +168,16 @@ export interface ExperienceFormData {
   end_date?: string;
   is_current: boolean;
   description: string;
-  responsibilities?: string;
-  achievements?: string;
   technologies: string[];
   company_url?: string;
 }
 
 export interface EducationFormData {
   institution: string;
-  degree: 'high_school' | 'associate' | 'bachelors' | 'masters' | 'phd' | 'bootcamp' | 'certification' | 'other';
+  degree: 'high_school' | 'associate' | 'bachelor' | 'master' | 'phd' | 'certificate' | 'bootcamp' | 'other';
   field_of_study: string;
-  start_date: string;
-  end_date?: string;
+  start_date?: string | null;
+  end_date?: string | null;
   is_current: boolean;
   grade?: string;
   description?: string;
@@ -176,3 +193,135 @@ export interface CertificationFormData {
   credential_url?: string;
   description?: string;
 }
+
+export interface HobbyFormData {
+  name: string;
+  description: string;
+  category: 'sports' | 'arts' | 'volunteer' | 'club' | 'creative' | 'other';
+  start_date?: string;
+  end_date?: string;
+  is_current: boolean;
+  achievements?: string;
+}
+
+export interface Award {
+  id: number;
+  title: string;
+  issuer: string;
+  date: string;
+  category: 'academic' | 'professional' | 'competition' | 'scholarship' | 'leadership' | 'community' | 'publication' | 'patent' | 'other';
+  description: string;
+  url: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AwardFormData {
+  title: string;
+  issuer: string;
+  date: string | null;
+  category: 'academic' | 'professional' | 'competition' | 'scholarship' | 'leadership' | 'community' | 'publication' | 'patent' | 'other';
+  description?: string;
+  url?: string;
+}
+
+export interface Contact {
+  id: number;
+  contact_type: 'email' | 'phone' | 'website' | 'linkedin' | 'github' | 'twitter' | 'instagram' | 'facebook' | 'youtube' | 'portfolio' | 'blog' | 'other';
+  label: string;
+  value: string;
+  is_primary: boolean;
+  is_public: boolean;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactFormData {
+  contact_type: 'email' | 'phone' | 'website' | 'linkedin' | 'github' | 'twitter' | 'instagram' | 'facebook' | 'youtube' | 'portfolio' | 'blog' | 'other';
+  label: string;
+  value: string;
+  is_primary: boolean;
+  is_public: boolean;
+}
+
+export interface Publication {
+  id: number;
+  title: string;
+  authors: string;
+  publication_type: 'journal' | 'conference' | 'book' | 'chapter' | 'thesis' | 'preprint' | 'magazine' | 'blog' | 'other';
+  publisher: string;
+  publication_date: string;
+  doi?: string;
+  url?: string;
+  description?: string;
+  citation_count: number;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicationFormData {
+  title: string;
+  authors: string;
+  publication_type: 'journal' | 'conference' | 'book' | 'chapter' | 'thesis' | 'preprint' | 'magazine' | 'blog' | 'other';
+  publisher?: string;
+  publication_date: string;
+  doi?: string;
+  url?: string;
+  description?: string;
+  citation_count?: number;
+}
+
+
+export interface Patent {
+  id: number;
+  title: string;
+  inventors: string;
+  patent_number?: string;
+  status: 'granted' | 'pending' | 'filed' | 'published' | 'expired';
+  filing_date: string;
+  issue_date?: string;
+  patent_office?: string;
+  url?: string;
+  description?: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PatentFormData {
+  title: string;
+  inventors: string;
+  patent_number?: string;
+  status: 'granted' | 'pending' | 'filed' | 'published' | 'expired';
+  filing_date: string;
+  issue_date?: string;
+  patent_office?: string;
+  url?: string;
+  description?: string;
+}
+
+export interface Other {
+  id: number;
+  title: string;
+  category?: string;
+  description?: string;
+  date?: string;
+  url?: string;
+  tags?: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OtherFormData {
+  title: string;
+  category?: string;
+  description?: string;
+  date?: string;
+  url?: string;
+  tags?: string;
+}
+
