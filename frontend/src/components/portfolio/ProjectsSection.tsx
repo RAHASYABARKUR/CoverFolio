@@ -61,11 +61,19 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ portfolioId }) => {
     return <div style={styles.loading}>Loading projects...</div>;
   }
 
+  console.log('ProjectsSection render - isAdding:', isAdding, 'projects count:', projects.length);
+
   return (
     <div>
       <div style={styles.header}>
         <h2 style={styles.sectionTitle}>Projects</h2>
-        <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+        <button 
+          onClick={() => {
+            console.log('Add Project button clicked! Setting isAdding to true');
+            setIsAdding(true);
+          }} 
+          style={styles.addButton}
+        >
           + Add Project
         </button>
       </div>
@@ -106,9 +114,18 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ portfolioId }) => {
                 project={project}
                 onCancel={() => setEditingId(null)}
                 onSave={async (data) => {
-                  await portfolioService.updateProject(project.id, data);
-                  await loadProjects();
-                  setEditingId(null);
+                  try {
+                    console.log('Updating project ID:', project.id, 'with data:', data);
+                    await portfolioService.updateProject(project.id, data);
+                    await loadProjects();
+                    setEditingId(null);
+                  } catch (err: any) {
+                    console.error('Failed to update project:', err);
+                    console.error('Error response:', err.response?.data);
+                    const errorMsg = err.response?.data?.error || err.response?.data?.message || JSON.stringify(err.response?.data) || err.message || 'Failed to update project';
+                    setError(errorMsg);
+                    throw err;
+                  }
                 }}
               />
             ) : (
@@ -136,20 +153,40 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit, onDelete }) 
   const statusColors: Record<string, string> = {
     in_progress: '#3182ce',
     completed: '#38a169',
-    on_hold: '#d69e2e',
-    cancelled: '#e53e3e',
+    planned: '#d69e2e',
   };
 
   const statusLabels: Record<string, string> = {
     in_progress: 'In Progress',
     completed: 'Completed',
-    on_hold: 'On Hold',
-    cancelled: 'Cancelled',
+    planned: 'Planned',
+  };
+
+  // Format date range display
+  const formatDateRange = () => {
+    if (!project.start_date) return null;
+    
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    };
+    
+    const startDate = formatDate(project.start_date);
+    
+    if (!project.end_date) {
+      // Only start date - no duration
+      return `${startDate}`;
+    }
+    
+    const endDate = formatDate(project.end_date);
+    const duration = project.duration ? ` (${project.duration})` : '';
+    
+    return `${startDate} - ${endDate}${duration}`;
   };
 
   return (
     <div style={styles.projectCard}>
-      {project.is_featured && <div style={styles.featuredBadge}>⭐ Featured</div>}
+      {project.featured && <div style={styles.featuredBadge}>⭐ Featured</div>}
       
       <div style={styles.cardHeader}>
         <h3 style={styles.projectTitle}>{project.title}</h3>
@@ -183,7 +220,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit, onDelete }) 
         >
           {statusLabels[project.status]}
         </span>
-        <span style={styles.duration}>{project.duration || 'Duration not set'}</span>
+        {formatDateRange() && (
+          <span style={styles.duration}>📅 {formatDateRange()}</span>
+        )}
       </div>
 
       <div style={styles.projectLinks}>
@@ -214,17 +253,28 @@ interface ProjectFormProps {
 }
 
 const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) => {
+  // Format dates to YYYY-MM-DD for date inputs
+  const formatDate = (dateStr: string | undefined) => {
+    if (!dateStr) return '';
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    // Otherwise parse and format
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  };
+
   const [formData, setFormData] = useState<ProjectFormData>({
     title: project?.title || '',
     description: project?.description || '',
     tech_stack: project?.tech_stack || [],
-    start_date: project?.start_date || '',
-    end_date: project?.end_date || '',
+    start_date: formatDate(project?.start_date),
+    end_date: formatDate(project?.end_date),
     project_url: project?.project_url || '',
     demo_url: project?.demo_url || '',
     github_url: project?.github_url || '',
     status: project?.status || 'in_progress',
-    is_featured: project?.is_featured || false,
+    featured: project?.featured || false,
   });
   const [techInput, setTechInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -232,8 +282,16 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    // Prepare data for submission - convert empty dates to null for clearing
+    const submissionData = {
+      ...formData,
+      start_date: formData.start_date || null,
+      end_date: formData.end_date || null,
+    };
+    
     try {
-      await onSave(formData);
+      await onSave(submissionData);
     } catch (err) {
       console.error('Failed to save project:', err);
     } finally {
@@ -257,8 +315,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
       <h3 style={styles.formTitle}>{project ? 'Edit Project' : 'Add Project'}</h3>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Project Title *</label>
+        <label htmlFor="project-title" style={styles.label}>Project Title *</label>
         <input
+          id="project-title"
+          name="project-title"
           type="text"
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -269,8 +329,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Description *</label>
+        <label htmlFor="project-description" style={styles.label}>Description *</label>
         <textarea
+          id="project-description"
+          name="project-description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           required
@@ -281,9 +343,11 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Tech Stack</label>
+        <label htmlFor="project-tech" style={styles.label}>Tech Stack</label>
         <div style={styles.techInputContainer}>
           <input
+            id="project-tech"
+            name="project-tech"
             type="text"
             value={techInput}
             onChange={(e) => setTechInput(e.target.value)}
@@ -309,20 +373,24 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
 
       <div style={styles.formRow}>
         <div style={styles.formGroup}>
-          <label style={styles.label}>Start Date *</label>
+          <label htmlFor="project-start-date" style={styles.label}>Start Date *</label>
           <input
+            id="project-start-date"
+            name="project-start-date"
             type="date"
-            value={formData.start_date}
+            value={formData.start_date || ''}
             onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
             required
             style={styles.input}
           />
         </div>
         <div style={styles.formGroup}>
-          <label style={styles.label}>End Date</label>
+          <label htmlFor="project-end-date" style={styles.label}>End Date</label>
           <input
+            id="project-end-date"
+            name="project-end-date"
             type="date"
-            value={formData.end_date}
+            value={formData.end_date || ''}
             onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
             style={styles.input}
           />
@@ -330,22 +398,25 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Status *</label>
+        <label htmlFor="project-status" style={styles.label}>Status *</label>
         <select
+          id="project-status"
+          name="project-status"
           value={formData.status}
           onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
           style={styles.input}
         >
           <option value="in_progress">In Progress</option>
           <option value="completed">Completed</option>
-          <option value="on_hold">On Hold</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="planned">Planned</option>
         </select>
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Project URL</label>
+        <label htmlFor="project-url" style={styles.label}>Project URL</label>
         <input
+          id="project-url"
+          name="project-url"
           type="url"
           value={formData.project_url}
           onChange={(e) => setFormData({ ...formData, project_url: e.target.value })}
@@ -355,8 +426,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Demo URL</label>
+        <label htmlFor="project-demo-url" style={styles.label}>Demo URL</label>
         <input
+          id="project-demo-url"
+          name="project-demo-url"
           type="url"
           value={formData.demo_url}
           onChange={(e) => setFormData({ ...formData, demo_url: e.target.value })}
@@ -366,8 +439,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>GitHub URL</label>
+        <label htmlFor="project-github-url" style={styles.label}>GitHub URL</label>
         <input
+          id="project-github-url"
+          name="project-github-url"
           type="url"
           value={formData.github_url}
           onChange={(e) => setFormData({ ...formData, github_url: e.target.value })}
@@ -380,8 +455,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onCancel, onSave }) 
         <label style={styles.checkboxLabel}>
           <input
             type="checkbox"
-            checked={formData.is_featured}
-            onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+            checked={formData.featured}
+            onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
             style={styles.checkbox}
           />
           <span>⭐ Featured Project</span>
