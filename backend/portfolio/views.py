@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from django.shortcuts import get_object_or_404
-from .models import Portfolio, Project, Skill, Experience, Education, Certification
+from .models import Portfolio, Project, Skill, Experience, Education, Certification, Hobby, Award, Contact, Publication, Patent, Other
 from .serializers import (
     PortfolioSerializer,
     PortfolioBasicSerializer,
@@ -12,8 +12,15 @@ from .serializers import (
     SkillSerializer,
     ExperienceSerializer,
     EducationSerializer,
-    CertificationSerializer
+    CertificationSerializer,
+    HobbySerializer,
+    AwardSerializer,
+    ContactSerializer,
+    PublicationSerializer,
+    PatentSerializer,
+    OtherSerializer
 )
+from resume_parser.models import Resume
 
 
 # ==================== Portfolio Views ====================
@@ -454,3 +461,656 @@ def certification_detail(request, certification_id):
         return Response({
             'message': 'Certification deleted successfully'
         }, status=status.HTTP_200_OK)
+
+
+# ==================== Hobby Views ====================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def hobby_list_create(request):
+    """List all hobbies or create a new hobby."""
+    portfolio = get_object_or_404(Portfolio, user=request.user)
+    
+    if request.method == 'GET':
+        hobbies = Hobby.objects.filter(portfolio=portfolio)
+        serializer = HobbySerializer(hobbies, many=True)
+        return Response({
+            'hobbies': serializer.data,
+            'count': hobbies.count()
+        }, status=status.HTTP_200_OK)
+    
+    elif request.method == 'POST':
+        serializer = HobbySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(portfolio=portfolio)
+            return Response({
+                'message': 'Hobby created successfully',
+                'hobby': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def hobby_detail(request, hobby_id):
+    """Retrieve, update, or delete a hobby."""
+    portfolio = get_object_or_404(Portfolio, user=request.user)
+    
+    try:
+        hobby = Hobby.objects.get(id=hobby_id, portfolio=portfolio)
+    except Hobby.DoesNotExist:
+        return Response({'error': 'Hobby not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = HobbySerializer(hobby)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif request.method in ['PUT', 'PATCH']:
+        partial = request.method == 'PATCH'
+        serializer = HobbySerializer(hobby, data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Hobby updated successfully',
+                'hobby': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        hobby.delete()
+        return Response({
+            'message': 'Hobby deleted successfully'
+        }, status=status.HTTP_200_OK)
+
+
+# ==================== Award Views ====================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def award_list_create(request):
+    """List all awards or create a new award."""
+    portfolio = get_object_or_404(Portfolio, user=request.user)
+    
+    if request.method == 'GET':
+        awards = Award.objects.filter(portfolio=portfolio)
+        serializer = AwardSerializer(awards, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif request.method == 'POST':
+        serializer = AwardSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(portfolio=portfolio)
+            return Response({
+                'message': 'Award created successfully',
+                'award': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def award_detail(request, award_id):
+    """Retrieve, update, or delete an award."""
+    portfolio = get_object_or_404(Portfolio, user=request.user)
+    
+    try:
+        award = Award.objects.get(id=award_id, portfolio=portfolio)
+    except Award.DoesNotExist:
+        return Response({'error': 'Award not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = AwardSerializer(award)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif request.method in ['PUT', 'PATCH']:
+        partial = request.method == 'PATCH'
+        serializer = AwardSerializer(award, data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Award updated successfully',
+                'award': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        award.delete()
+        return Response({
+            'message': 'Award deleted successfully'
+        }, status=status.HTTP_200_OK)
+
+
+# ==================== Contact Views ====================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def contact_list_create(request):
+    """List all contacts or create a new contact."""
+    portfolio = get_object_or_404(Portfolio, user=request.user)
+    
+    if request.method == 'GET':
+        contacts = Contact.objects.filter(portfolio=portfolio)
+        serializer = ContactSerializer(contacts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif request.method == 'POST':
+        serializer = ContactSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(portfolio=portfolio)
+            return Response({
+                'message': 'Contact created successfully',
+                'contact': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def contact_detail(request, contact_id):
+    """Retrieve, update, or delete a contact."""
+    portfolio = get_object_or_404(Portfolio, user=request.user)
+    
+    try:
+        contact = Contact.objects.get(id=contact_id, portfolio=portfolio)
+    except Contact.DoesNotExist:
+        return Response({'error': 'Contact not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = ContactSerializer(contact)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif request.method in ['PUT', 'PATCH']:
+        partial = request.method == 'PATCH'
+        serializer = ContactSerializer(contact, data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Contact updated successfully',
+                'contact': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        contact.delete()
+        return Response({
+            'message': 'Contact deleted successfully'
+        }, status=status.HTTP_200_OK)
+
+
+# ==================== Auto-Populate from Resume ====================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def populate_from_resume(request, resume_id):
+    """
+    Auto-populate portfolio from resume structured data.
+    
+    POST /api/portfolio/populate-from-resume/<resume_id>/
+    Body: {
+        "overwrite": false  # Optional: whether to overwrite existing data
+    }
+    """
+    # Get the resume
+    try:
+        resume = Resume.objects.get(id=resume_id, user=request.user)
+    except Resume.DoesNotExist:
+        return Response({
+            'error': 'Resume not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if resume has structured data
+    if not resume.structured_data:
+        return Response({
+            'error': 'Resume has not been parsed yet. Please re-upload the resume.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    data = resume.structured_data
+    overwrite = request.data.get('overwrite', False)
+    
+    # Get or create portfolio
+    portfolio, created = Portfolio.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'title': data.get('name', 'My Portfolio'),
+            'github': data.get('github', ''),
+            'linkedin': data.get('linkedin', '')
+        }
+    )
+    
+    # Update portfolio if data exists and overwrite is True
+    if not created and overwrite:
+        portfolio.github = data.get('github', portfolio.github)
+        portfolio.linkedin = data.get('linkedin', portfolio.linkedin)
+        portfolio.save()
+    
+    stats = {
+        'created': {'education': 0, 'experience': 0, 'projects': 0, 'skills': 0, 'hobbies': 0},
+        'skipped': {'education': 0, 'experience': 0, 'projects': 0, 'skills': 0, 'hobbies': 0}
+    }
+    
+    # Populate Education
+    for edu_data in data.get('education', []):
+        if not edu_data.get('degree'):
+            continue
+            
+        # Check if already exists (by degree and institution)
+        exists = Education.objects.filter(
+            portfolio=portfolio,
+            degree__icontains=edu_data.get('degree', '')[:50],
+            institution__icontains=edu_data.get('institution', '')[:50]
+        ).exists()
+        
+        if exists and not overwrite:
+            stats['skipped']['education'] += 1
+            continue
+        
+        if exists and overwrite:
+            Education.objects.filter(
+                portfolio=portfolio,
+                degree__icontains=edu_data.get('degree', '')[:50],
+                institution__icontains=edu_data.get('institution', '')[:50]
+            ).delete()
+        
+        # Parse year to date
+        year_str = edu_data.get('year', '')
+        end_date = None
+        start_date = None
+        if year_str:
+            try:
+                from datetime import date
+                year = int(''.join(filter(str.isdigit, year_str))[:4])
+                if year > 0:
+                    end_date = date(year, 12, 31)
+                    start_date = date(max(year - 4, 2000), 9, 1)  # Assume 4-year degree
+            except:
+                pass
+        
+        # If no date parsed, use defaults
+        if not start_date:
+            from datetime import date
+            start_date = date(2020, 9, 1)
+        
+        # Map degree text to choices
+        degree_text = edu_data.get('degree', '').lower()
+        degree_choice = 'other'
+        if 'bachelor' in degree_text or 'b.s' in degree_text or 'b.a' in degree_text:
+            degree_choice = 'bachelor'
+        elif 'master' in degree_text or 'm.s' in degree_text or 'm.a' in degree_text:
+            degree_choice = 'master'
+        elif 'phd' in degree_text or 'ph.d' in degree_text or 'doctor' in degree_text:
+            degree_choice = 'phd'
+        elif 'associate' in degree_text:
+            degree_choice = 'associate'
+        elif 'high school' in degree_text:
+            degree_choice = 'high_school'
+        
+        try:
+            Education.objects.create(
+                portfolio=portfolio,
+                degree=degree_choice,
+                institution=edu_data.get('institution', 'Unknown Institution')[:200],
+                field_of_study=edu_data.get('degree', 'Not Specified')[:200],
+                start_date=start_date,
+                end_date=end_date,
+                grade=edu_data.get('gpa', '')[:50] if edu_data.get('gpa') else ''
+            )
+            stats['created']['education'] += 1
+        except Exception as e:
+            print(f"Failed to create education entry: {e}")
+            stats['skipped']['education'] += 1
+    
+    # Populate Experience
+    for exp_data in data.get('experience', []):
+        if not exp_data.get('company') or not exp_data.get('role'):
+            continue
+            
+        exists = Experience.objects.filter(
+            portfolio=portfolio,
+            company__icontains=exp_data.get('company', '')[:50],
+            position__icontains=exp_data.get('role', '')[:50]
+        ).exists()
+        
+        if exists and not overwrite:
+            stats['skipped']['experience'] += 1
+            continue
+        
+        if exists and overwrite:
+            Experience.objects.filter(
+                portfolio=portfolio,
+                company__icontains=exp_data.get('company', '')[:50],
+                position__icontains=exp_data.get('role', '')[:50]
+            ).delete()
+        
+        # Parse years
+        from datetime import date
+        years_str = exp_data.get('years', '')
+        start_date = date(2020, 1, 1)  # Default
+        end_date = None
+        is_current = 'present' in years_str.lower() if years_str else False
+        
+        # Try to parse year from years string
+        if years_str:
+            import re
+            years = re.findall(r'(19|20)\d{2}', years_str)
+            if len(years) >= 1:
+                try:
+                    start_year = int(years[0])
+                    start_date = date(start_year, 1, 1)
+                    if len(years) >= 2 and not is_current:
+                        end_year = int(years[1])
+                        end_date = date(end_year, 12, 31)
+                except:
+                    pass
+        
+        try:
+            Experience.objects.create(
+                portfolio=portfolio,
+                company=exp_data.get('company', '')[:200],
+                position=exp_data.get('role', '')[:200],
+                description=exp_data.get('role_summary', ''),
+                start_date=start_date,
+                end_date=end_date,
+                is_current=is_current
+            )
+            stats['created']['experience'] += 1
+        except Exception as e:
+            print(f"Failed to create experience entry: {e}")
+            stats['skipped']['experience'] += 1
+    
+    # Populate Projects
+    for proj_data in data.get('projects', []):
+        if not proj_data.get('title'):
+            continue
+            
+        exists = Project.objects.filter(
+            portfolio=portfolio,
+            title__icontains=proj_data.get('title', '')[:50]
+        ).exists()
+        
+        if exists and not overwrite:
+            stats['skipped']['projects'] += 1
+            continue
+        
+        if exists and overwrite:
+            Project.objects.filter(
+                portfolio=portfolio,
+                title__icontains=proj_data.get('title', '')[:50]
+            ).delete()
+        
+        Project.objects.create(
+            portfolio=portfolio,
+            title=proj_data.get('title', '')[:200],
+            description=proj_data.get('description', ''),
+            tech_stack=proj_data.get('technologies', [])
+        )
+        stats['created']['projects'] += 1
+    
+    # Populate Skills
+    for skill_name in data.get('skills', []):
+        if not skill_name or len(skill_name) < 2:
+            continue
+            
+        exists = Skill.objects.filter(
+            portfolio=portfolio,
+            name__iexact=skill_name[:100]
+        ).exists()
+        
+        if exists:
+            stats['skipped']['skills'] += 1
+            continue
+        
+        Skill.objects.create(
+            portfolio=portfolio,
+            name=skill_name[:100]
+        )
+        stats['created']['skills'] += 1
+    
+    # Populate Hobbies/Extracurriculars
+    for hobby_text in data.get('extracurriculars', []):
+        if not hobby_text or len(hobby_text) < 5:
+            continue
+            
+        # Extract name (first part before any punctuation or newline)
+        name = hobby_text.split('.')[0].split('\n')[0][:200]
+        
+        exists = Hobby.objects.filter(
+            portfolio=portfolio,
+            name__icontains=name[:50]
+        ).exists()
+        
+        if exists and not overwrite:
+            stats['skipped']['hobbies'] += 1
+            continue
+        
+        if exists and overwrite:
+            Hobby.objects.filter(
+                portfolio=portfolio,
+                name__icontains=name[:50]
+            ).delete()
+        
+        Hobby.objects.create(
+            portfolio=portfolio,
+            name=name,
+            description=hobby_text
+        )
+        stats['created']['hobbies'] += 1
+    
+    return Response({
+        'message': 'Portfolio populated successfully from resume',
+        'portfolio_id': portfolio.id,
+        'statistics': stats
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def publication_list_create(request):
+    """List all publications or create a new one."""
+    try:
+        portfolio = Portfolio.objects.get(user=request.user)
+    except Portfolio.DoesNotExist:
+        return Response({
+            'error': 'Portfolio not found. Create a portfolio first.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        publications = Publication.objects.filter(portfolio=portfolio)
+        serializer = PublicationSerializer(publications, many=True)
+        return Response({
+            'publications': serializer.data,
+            'count': len(serializer.data)
+        }, status=status.HTTP_200_OK)
+    
+    elif request.method == 'POST':
+        serializer = PublicationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(portfolio=portfolio)
+            return Response({
+                'message': 'Publication added successfully',
+                'publication': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def publication_detail(request, pk):
+    """Retrieve, update, or delete a publication."""
+    try:
+        portfolio = Portfolio.objects.get(user=request.user)
+        publication = Publication.objects.get(pk=pk, portfolio=portfolio)
+    except Portfolio.DoesNotExist:
+        return Response({
+            'error': 'Portfolio not found.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Publication.DoesNotExist:
+        return Response({
+            'error': 'Publication not found.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = PublicationSerializer(publication)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif request.method in ['PUT', 'PATCH']:
+        serializer = PublicationSerializer(
+            publication,
+            data=request.data,
+            partial=(request.method == 'PATCH')
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Publication updated successfully',
+                'publication': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        publication.delete()
+        return Response({
+            'message': 'Publication deleted successfully'
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def patent_list_create(request):
+    """List all patents or create a new one."""
+    try:
+        portfolio = Portfolio.objects.get(user=request.user)
+    except Portfolio.DoesNotExist:
+        return Response({
+            'error': 'Portfolio not found. Create a portfolio first.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        patents = Patent.objects.filter(portfolio=portfolio)
+        serializer = PatentSerializer(patents, many=True)
+        return Response({
+            'patents': serializer.data,
+            'count': len(serializer.data)
+        }, status=status.HTTP_200_OK)
+    
+    elif request.method == 'POST':
+        serializer = PatentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(portfolio=portfolio)
+            return Response({
+                'message': 'Patent added successfully',
+                'patent': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def patent_detail(request, pk):
+    """Retrieve, update, or delete a patent."""
+    try:
+        portfolio = Portfolio.objects.get(user=request.user)
+        patent = Patent.objects.get(pk=pk, portfolio=portfolio)
+    except Portfolio.DoesNotExist:
+        return Response({
+            'error': 'Portfolio not found.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Patent.DoesNotExist:
+        return Response({
+            'error': 'Patent not found.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = PatentSerializer(patent)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif request.method in ['PUT', 'PATCH']:
+        serializer = PatentSerializer(
+            patent,
+            data=request.data,
+            partial=(request.method == 'PATCH')
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Patent updated successfully',
+                'patent': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        patent.delete()
+        return Response({
+            'message': 'Patent deleted successfully'
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def other_list_create(request):
+    """List all other items or create a new one."""
+    try:
+        portfolio = Portfolio.objects.get(user=request.user)
+    except Portfolio.DoesNotExist:
+        return Response({
+            'error': 'Portfolio not found.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        others = Other.objects.filter(portfolio=portfolio)
+        serializer = OtherSerializer(others, many=True)
+        return Response({
+            'others': serializer.data,
+            'count': others.count()
+        }, status=status.HTTP_200_OK)
+    
+    elif request.method == 'POST':
+        serializer = OtherSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(portfolio=portfolio)
+            return Response({
+                'message': 'Other item created successfully',
+                'other': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def other_detail(request, pk):
+    """Retrieve, update or delete an other item."""
+    try:
+        portfolio = Portfolio.objects.get(user=request.user)
+        other = Other.objects.get(pk=pk, portfolio=portfolio)
+    except Portfolio.DoesNotExist:
+        return Response({
+            'error': 'Portfolio not found.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Other.DoesNotExist:
+        return Response({
+            'error': 'Other item not found.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = OtherSerializer(other)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif request.method in ['PUT', 'PATCH']:
+        serializer = OtherSerializer(
+            other,
+            data=request.data,
+            partial=(request.method == 'PATCH')
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Other item updated successfully',
+                'other': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        other.delete()
+        return Response({
+            'message': 'Other item deleted successfully'
+        }, status=status.HTTP_200_OK)
+

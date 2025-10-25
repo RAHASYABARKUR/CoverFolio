@@ -1,27 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import PortfolioOverview from './portfolio/PortfolioOverview';
+import ProjectsSection from './portfolio/ProjectsSection';
+import SkillsSection from './portfolio/SkillsSection';
+import ExperienceSection from './portfolio/ExperienceSection';
+import EducationSection from './portfolio/EducationSection';
+import AwardsSection from './portfolio/AwardsSection';
+import HobbiesSection from './portfolio/HobbiesSection';
+import ContactsSection from './portfolio/ContactsSection';
+import CertificationsSection from './portfolio/CertificationsSection';
+import PublicationsPatentsSection from './portfolio/PublicationsPatentsSection';
+import OthersSection from './portfolio/OthersSection';
+import portfolioService from '../services/portfolio.service';
+import { Portfolio } from '../types/portfolio.types';
 
 
 interface Section {
  id: string;
  title: string;
  icon: string;
- content: string;
 }
 
 
 const PortfolioEditor: React.FC = () => {
  const { resumeId } = useParams<{ resumeId: string }>();
  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('overview');
-  const sections: Section[] = [
-   { id: 'overview', title: 'Overview', icon: '👤', content: 'Personal information and summary' },
-   { id: 'experience', title: 'Experience', icon: '💼', content: 'Work experience and achievements' },
-   { id: 'projects', title: 'Projects', icon: '🚀', content: 'Portfolio projects and case studies' },
-   { id: 'skills', title: 'Skills', icon: '⚡', content: 'Technical and soft skills' },
-   { id: 'education', title: 'Education', icon: '🎓', content: 'Educational background' },
-   { id: 'contact', title: 'Contact', icon: '📧', content: 'Contact information and social links' },
+ const [activeSection, setActiveSection] = useState('overview');
+ const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+ const [loading, setLoading] = useState(true);
+  
+ const sections: Section[] = [
+   { id: 'overview', title: 'Overview', icon: '👤' },
+   { id: 'experience', title: 'Experience', icon: '💼' },
+   { id: 'projects', title: 'Projects', icon: '🚀' },
+   { id: 'skills', title: 'Skills', icon: '⚡' },
+   { id: 'education', title: 'Education', icon: '🎓' },
+   { id: 'certifications', title: 'Certifications', icon: '📜' },
+   { id: 'publications', title: 'Publications & Patents', icon: '📚' },
+   { id: 'awards', title: 'Accomplishments & Awards', icon: '🏆' },
+   { id: 'hobbies', title: 'Hobbies & Interests', icon: '🎯' },
+   { id: 'contacts', title: 'Contact Information', icon: '📞' },
+   { id: 'others', title: 'Other', icon: '📌' },
  ];
+
+ // Load portfolio data on component mount
+ useEffect(() => {
+   loadPortfolio();
+ }, []);
+
+ const loadPortfolio = async () => {
+   try {
+     setLoading(true);
+     const data = await portfolioService.getPortfolio();
+     setPortfolio(data);
+   } catch (err: any) {
+     // If portfolio doesn't exist (404), that's okay - user can create one
+     if (err.response?.status === 404) {
+       setPortfolio(null);
+     } else {
+       console.error('Failed to load portfolio:', err);
+     }
+   } finally {
+     setLoading(false);
+   }
+ };
 
 
  const handleSave = () => {
@@ -31,6 +73,51 @@ const PortfolioEditor: React.FC = () => {
 
  const handlePublish = () => {
    alert('Portfolio published! (This feature is coming soon)');
+ };
+
+ // Render the appropriate section component based on activeSection
+ const renderSectionContent = () => {
+   if (loading) {
+     return (
+       <div style={styles.loadingContainer}>
+         <div style={styles.spinner}></div>
+         <p style={styles.loadingText}>Loading portfolio...</p>
+       </div>
+     );
+   }
+
+   switch (activeSection) {
+     case 'overview':
+       return <div style={{ marginTop: '-32px' }}><PortfolioOverview portfolio={portfolio} onUpdate={loadPortfolio} /></div>;
+     case 'projects':
+       return <ProjectsSection portfolioId={portfolio?.id} />;
+     case 'skills':
+       return <SkillsSection />;
+     case 'experience':
+       return <ExperienceSection />;
+     case 'education':
+       return <EducationSection />;
+     case 'certifications':
+       return <CertificationsSection />;
+     case 'publications':
+       return <PublicationsPatentsSection />;
+     case 'awards':
+       return <AwardsSection />;
+     case 'hobbies':
+       return <HobbiesSection />;
+     case 'contacts':
+       return <ContactsSection />;
+     case 'others':
+       return <OthersSection />;
+     default:
+       return (
+         <div style={styles.placeholderCard}>
+           <div style={styles.placeholderIcon}>✏️</div>
+           <h3 style={styles.placeholderTitle}>Section Coming Soon</h3>
+           <p style={styles.placeholderText}>This section is under development.</p>
+         </div>
+       );
+   }
  };
 
 
@@ -86,80 +173,8 @@ const PortfolioEditor: React.FC = () => {
        {/* Main Content Area */}
        <div style={styles.mainContent}>
          <div style={styles.contentCard}>
-           {/* Section Header */}
-           <div style={styles.contentHeader}>
-             <div style={styles.contentHeaderLeft}>
-               <span style={styles.contentIcon}>
-                 {sections.find(s => s.id === activeSection)?.icon}
-               </span>
-               <h2 style={styles.contentTitle}>
-                 {sections.find(s => s.id === activeSection)?.title}
-               </h2>
-             </div>
-             <button style={styles.addButton}>+ Add Item</button>
-           </div>
-
-
-           {/* Section Content */}
-           <div style={styles.sectionContent}>
-             <div style={styles.placeholderCard}>
-               <div style={styles.placeholderIcon}>✏️</div>
-               <h3 style={styles.placeholderTitle}>
-                 Edit Your {sections.find(s => s.id === activeSection)?.title}
-               </h3>
-               <p style={styles.placeholderText}>
-                 {sections.find(s => s.id === activeSection)?.content}
-               </p>
-               <p style={styles.placeholderSubtext}>
-                 This editor is coming soon! You'll be able to add, edit, and organize your portfolio content here.
-               </p>
-             </div>
-
-
-             {/* Example content preview */}
-             {activeSection === 'overview' && (
-               <div style={styles.previewSection}>
-                 <h4 style={styles.previewTitle}>Preview:</h4>
-                 <div style={styles.previewCard}>
-                   <h3>John Doe</h3>
-                   <p style={styles.previewRole}>Full Stack Developer</p>
-                   <p style={styles.previewBio}>
-                     Passionate developer with 5+ years of experience building scalable web applications.
-                     Specialized in React, Node.js, and cloud technologies.
-                   </p>
-                 </div>
-               </div>
-             )}
-
-
-             {activeSection === 'projects' && (
-               <div style={styles.previewSection}>
-                 <h4 style={styles.previewTitle}>Sample Projects:</h4>
-                 <div style={styles.projectGrid}>
-                   <div style={styles.projectCard}>
-                     <h4>Project 1</h4>
-                     <p>E-commerce Platform</p>
-                   </div>
-                   <div style={styles.projectCard}>
-                     <h4>Project 2</h4>
-                     <p>Task Management App</p>
-                   </div>
-                 </div>
-               </div>
-             )}
-
-
-             {activeSection === 'skills' && (
-               <div style={styles.previewSection}>
-                 <h4 style={styles.previewTitle}>Sample Skills:</h4>
-                 <div style={styles.skillsGrid}>
-                   {['React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker'].map((skill) => (
-                     <div key={skill} style={styles.skillBadge}>{skill}</div>
-                   ))}
-                 </div>
-               </div>
-             )}
-           </div>
+           {/* Render the actual section component */}
+           {renderSectionContent()}
          </div>
        </div>
      </div>
@@ -402,7 +417,43 @@ const styles: { [key: string]: React.CSSProperties } = {
    fontSize: '14px',
    fontWeight: '600',
  },
+ loadingContainer: {
+   display: 'flex',
+   flexDirection: 'column' as 'column',
+   alignItems: 'center',
+   justifyContent: 'center',
+   minHeight: '400px',
+ },
+ spinner: {
+   width: '48px',
+   height: '48px',
+   border: '4px solid #e2e8f0',
+   borderTop: '4px solid #667eea',
+   borderRadius: '50%',
+   animation: 'spin 1s linear infinite',
+ },
+ loadingText: {
+   marginTop: '16px',
+   fontSize: '16px',
+   color: '#718096',
+ },
 };
+
+// Add keyframes for spinner animation
+if (typeof document !== 'undefined') {
+  const styleSheet = document.styleSheets[0];
+  const keyframes = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  `;
+  try {
+    styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
+  } catch (e) {
+    // Keyframes might already exist
+  }
+}
 
 
 export default PortfolioEditor;

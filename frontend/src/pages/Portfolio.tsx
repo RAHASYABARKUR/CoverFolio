@@ -101,9 +101,9 @@ const Portfolio: React.FC = () => {
           <PortfolioOverview portfolio={portfolio} onUpdate={loadPortfolio} />
         )}
         {activeTab === 'projects' && <ProjectsSection portfolioId={portfolio?.id} />}
-        {activeTab === 'skills' && <SkillsSection portfolioId={portfolio?.id} />}
-        {activeTab === 'experience' && <ExperienceSection portfolioId={portfolio?.id} />}
-        {activeTab === 'education' && <EducationSection portfolioId={portfolio?.id} />}
+        {activeTab === 'skills' && <SkillsSection />}
+        {activeTab === 'experience' && <ExperienceSection />}
+        {activeTab === 'education' && <EducationSection />}
       </div>
     </div>
   );

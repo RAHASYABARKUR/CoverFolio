@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
 import { Portfolio, PortfolioFormData } from '../../types/portfolio.types';
 import portfolioService from '../../services/portfolio.service';
 
@@ -11,6 +12,13 @@ const PortfolioOverview: React.FC<PortfolioOverviewProps> = ({ portfolio, onUpda
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [formData, setFormData] = useState<PortfolioFormData>({
     title: portfolio?.title || '',
     bio: portfolio?.bio || '',
@@ -21,6 +29,130 @@ const PortfolioOverview: React.FC<PortfolioOverviewProps> = ({ portfolio, onUpda
     twitter: portfolio?.twitter || '',
     is_public: portfolio?.is_public || false,
   });
+
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener('load', () => resolve(image));
+      image.addEventListener('error', (error) => reject(error));
+      image.src = url;
+    });
+
+  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error('No 2d context');
+    }
+
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('Canvas is empty'));
+          return;
+        }
+        resolve(blob);
+      }, 'image/jpeg');
+    });
+  };
+
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    // Read file and show crop modal
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setImageToCrop(reader.result as string);
+      setShowCropModal(true);
+    });
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropSave = async () => {
+    if (!imageToCrop || !croppedAreaPixels) return;
+
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
+      const croppedFile = new File([croppedBlob], 'profile-image.jpg', { type: 'image/jpeg' });
+      
+      await portfolioService.uploadProfileImage(croppedFile);
+      await onUpdate();
+      alert('Profile picture updated successfully!');
+      setShowCropModal(false);
+      setImageToCrop(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to upload image');
+      alert('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    setImageToCrop(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  };
+
+  const handleDeleteProfileImage = async () => {
+    if (!window.confirm('Are you sure you want to remove your profile picture?')) {
+      return;
+    }
+
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      await portfolioService.deleteProfileImage();
+      await onUpdate();
+      alert('Profile picture removed');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to remove image');
+      alert('Failed to remove image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +347,7 @@ const PortfolioOverview: React.FC<PortfolioOverviewProps> = ({ portfolio, onUpda
   }
 
   return (
-    <div>
+    <div style={styles.container}>
       <div style={styles.header}>
         <h2 style={styles.sectionTitle}>Portfolio Overview</h2>
         <button onClick={handleEdit} style={styles.editButton}>
@@ -225,7 +357,41 @@ const PortfolioOverview: React.FC<PortfolioOverviewProps> = ({ portfolio, onUpda
 
       <div style={styles.profileCard}>
         <div style={styles.profileHeader}>
-          <div style={styles.avatar}>{portfolio.user_name?.[0] || portfolio.user_email[0]}</div>
+          <div style={styles.avatarContainer}>
+            {portfolio.profile_image ? (
+              <img 
+                src={portfolio.profile_image} 
+                alt={portfolio.user_name || portfolio.user_email}
+                style={styles.profileImage}
+                onClick={() => setShowImageModal(true)}
+                title="Click to view full size"
+              />
+            ) : (
+              <div style={styles.avatar}>{portfolio.user_name?.[0] || portfolio.user_email[0]}</div>
+            )}
+            <div style={styles.imageActions}>
+              <label style={styles.uploadButton}>
+                {uploadingImage ? '⏳' : '📷'} {portfolio.profile_image ? 'Change' : 'Upload'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageUpload}
+                  style={{ display: 'none' }}
+                  disabled={uploadingImage}
+                />
+              </label>
+              {portfolio.profile_image && (
+                <button
+                  onClick={handleDeleteProfileImage}
+                  style={styles.deleteImageButton}
+                  disabled={uploadingImage}
+                  title="Remove profile picture"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
+          </div>
           <div>
             <h3 style={styles.profileName}>{portfolio.user_name || portfolio.user_email}</h3>
             <p style={styles.profileTitle}>{portfolio.title}</p>
@@ -299,16 +465,93 @@ const PortfolioOverview: React.FC<PortfolioOverviewProps> = ({ portfolio, onUpda
           </div>
         </div>
       </div>
+
+      {/* Image Zoom Modal */}
+      {showImageModal && portfolio.profile_image && (
+        <div style={styles.modalOverlay} onClick={() => setShowImageModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button 
+              style={styles.modalCloseButton}
+              onClick={() => setShowImageModal(false)}
+              title="Close"
+            >
+              ✕
+            </button>
+            <img 
+              src={portfolio.profile_image} 
+              alt={portfolio.user_name || portfolio.user_email}
+              style={styles.modalImage}
+            />
+            <div style={styles.modalCaption}>
+              {portfolio.user_name || portfolio.user_email}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCropModal && imageToCrop && (
+        <div style={styles.cropModalOverlay}>
+          <div style={styles.cropModalContent}>
+            <h3 style={styles.cropModalTitle}>Adjust Your Profile Picture</h3>
+            <div style={styles.cropContainer}>
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            <div style={styles.cropControls}>
+              <div style={styles.zoomControl}>
+                <label style={styles.zoomLabel}>Zoom</label>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  style={styles.zoomSlider}
+                />
+              </div>
+              <div style={styles.cropButtons}>
+                <button 
+                  style={styles.cropCancelButton} 
+                  onClick={handleCropCancel}
+                  disabled={uploadingImage}
+                >
+                  Cancel
+                </button>
+                <button 
+                  style={styles.cropSaveButton} 
+                  onClick={handleCropSave}
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? '⏳ Uploading...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    paddingTop: '32px',
+  },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '24px',
+    marginBottom: '32px',
   },
   sectionTitle: {
     fontSize: '24px',
@@ -450,13 +693,13 @@ const styles: { [key: string]: React.CSSProperties } = {
   profileCard: {
     backgroundColor: '#f7fafc',
     borderRadius: '12px',
-    padding: '24px',
+    padding: '32px',
   },
   profileHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    marginBottom: '24px',
+    gap: '24px',
+    marginBottom: '32px',
   },
   avatar: {
     width: '64px',
@@ -472,10 +715,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     textTransform: 'uppercase',
   },
   profileName: {
-    fontSize: '20px',
+    fontSize: '24px',
     fontWeight: '600',
     color: '#1a202c',
-    margin: '0 0 4px 0',
+    margin: '0 0 6px 0',
   },
   profileTitle: {
     fontSize: '16px',
@@ -483,29 +726,30 @@ const styles: { [key: string]: React.CSSProperties } = {
     margin: 0,
   },
   bioSection: {
-    marginBottom: '24px',
+    marginBottom: '32px',
   },
   bioTitle: {
     fontSize: '16px',
     fontWeight: '600',
     color: '#1a202c',
-    marginBottom: '8px',
+    marginBottom: '12px',
   },
   bioText: {
-    fontSize: '14px',
+    fontSize: '15px',
     color: '#4a5568',
-    lineHeight: '1.6',
+    lineHeight: '1.7',
+    margin: 0,
   },
   infoGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '12px',
-    marginBottom: '24px',
+    gap: '16px',
+    marginBottom: '32px',
   },
   infoItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '10px',
   },
   infoIcon: {
     fontSize: '18px',
@@ -523,23 +767,194 @@ const styles: { [key: string]: React.CSSProperties } = {
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-    gap: '16px',
-    marginTop: '24px',
-    paddingTop: '24px',
+    gap: '24px',
+    marginTop: '32px',
+    paddingTop: '32px',
     borderTop: '1px solid #e2e8f0',
   },
   statCard: {
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   statNumber: {
-    fontSize: '32px',
+    fontSize: '36px',
     fontWeight: 'bold',
     color: '#667eea',
-    marginBottom: '4px',
+    marginBottom: '6px',
   },
   statLabel: {
     fontSize: '14px',
     color: '#718096',
+    fontWeight: '500',
+  },
+  avatarContainer: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: '12px',
+  },
+  profileImage: {
+    width: '80px',
+    height: '80px',
+    borderRadius: '50%',
+    objectFit: 'cover' as const,
+    border: '3px solid #667eea',
+    cursor: 'pointer',
+  },
+  imageActions: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+  },
+  uploadButton: {
+    padding: '4px 12px',
+    backgroundColor: '#667eea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '500',
+    transition: 'background-color 0.2s',
+  },
+  deleteImageButton: {
+    padding: '4px 8px',
+    backgroundColor: '#FEE2E2',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'background-color 0.2s',
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    cursor: 'pointer',
+  },
+  modalContent: {
+    position: 'relative' as const,
+    maxWidth: '90vw',
+    maxHeight: '90vh',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '20px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+    cursor: 'default',
+  },
+  modalCloseButton: {
+    position: 'absolute' as const,
+    top: '10px',
+    right: '10px',
+    background: 'white',
+    border: 'none',
+    borderRadius: '50%',
+    width: '30px',
+    height: '30px',
+    fontSize: '20px',
+    cursor: 'pointer',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+  },
+  modalImage: {
+    maxWidth: '100%',
+    maxHeight: '80vh',
+    objectFit: 'contain' as const,
+    borderRadius: '8px',
+  },
+  modalCaption: {
+    textAlign: 'center' as const,
+    marginTop: '12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1a202c',
+  },
+  cropModalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1001,
+  },
+  cropModalContent: {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '24px',
+    width: '90vw',
+    maxWidth: '600px',
+    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.5)',
+  },
+  cropModalTitle: {
+    margin: '0 0 16px 0',
+    fontSize: '20px',
+    fontWeight: '600',
+    color: '#1a202c',
+    textAlign: 'center' as const,
+  },
+  cropContainer: {
+    position: 'relative' as const,
+    width: '100%',
+    height: '400px',
+    backgroundColor: '#f7fafc',
+    borderRadius: '8px',
+    overflow: 'hidden',
+  },
+  cropControls: {
+    marginTop: '20px',
+  },
+  zoomControl: {
+    marginBottom: '20px',
+  },
+  zoomLabel: {
+    display: 'block',
+    marginBottom: '8px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#4a5568',
+  },
+  zoomSlider: {
+    width: '100%',
+    height: '6px',
+    borderRadius: '3px',
+    outline: 'none',
+    cursor: 'pointer',
+  },
+  cropButtons: {
+    display: 'flex',
+    gap: '12px',
+    justifyContent: 'flex-end',
+  },
+  cropCancelButton: {
+    padding: '10px 24px',
+    backgroundColor: '#e2e8f0',
+    color: '#4a5568',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'background-color 0.2s',
+  },
+  cropSaveButton: {
+    padding: '10px 24px',
+    backgroundColor: '#667eea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'background-color 0.2s',
   },
 };
 
