@@ -10,6 +10,11 @@ class Resume(models.Model):
     title = models.CharField(max_length=200, blank=True)
     file_path = models.CharField(max_length=500)
     extracted_text = models.TextField(blank=True)
+    structured_data = models.JSONField(
+        null=True, 
+        blank=True,
+        help_text="Parsed resume data in structured JSON format"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

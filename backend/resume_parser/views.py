@@ -8,6 +8,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from .models import Resume
 from .serializers import ResumeSerializer
+from .parser import parse_resume_text
 
 
 @api_view(['POST'])
@@ -39,8 +40,9 @@ def upload_resume(request):
         
         # Extract text from PDF
         extracted_text = ""
+        full_file_path = default_storage.path(saved_path)
         try:
-            with pdfplumber.open(file) as pdf:
+            with pdfplumber.open(full_file_path) as pdf:
                 for page in pdf.pages:
                     text = page.extract_text()
                     if text:
@@ -50,12 +52,21 @@ def upload_resume(request):
                 'error': f'Failed to extract text from PDF: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        # Parse extracted text into structured data
+        structured_data = None
+        try:
+            structured_data = parse_resume_text(extracted_text.strip())
+        except Exception as e:
+            # Don't fail if parsing fails, just log it
+            print(f"Warning: Failed to parse resume structure: {str(e)}")
+        
         # Create resume record
         resume = Resume.objects.create(
             user=request.user,
             title=file.name.replace('.pdf', ''),
             file_path=saved_path,
-            extracted_text=extracted_text.strip()
+            extracted_text=extracted_text.strip(),
+            structured_data=structured_data
         )
         
         serializer = ResumeSerializer(resume)
