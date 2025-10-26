@@ -6,7 +6,8 @@ User = get_user_model()
 
 class Resume(models.Model):
     """Model to store resume information."""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='resumes')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL,     null=True,
+    blank=True,related_name='resumes')
     title = models.CharField(max_length=200, blank=True)
     file_path = models.CharField(max_length=500)
     extracted_text = models.TextField(blank=True)
