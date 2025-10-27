@@ -1,5 +1,6 @@
 import pdfplumber
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 import json
 from typing import List, Dict, Any
 import time
@@ -9,10 +10,16 @@ MODEL_NAME = "meta-llama/Llama-3.2-3B-Instruct"
 # --- Load LLaMA ---
 def load_llama(model_name=MODEL_NAME):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+    # Set pad_token if not set
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",
-        torch_dtype="auto"
+        dtype=torch.float16,  # Use 'dtype' instead of deprecated 'torch_dtype'
+        low_cpu_mem_usage=True
     )
     return tokenizer, model
 
@@ -28,7 +35,10 @@ def extract_text_from_pdf(pdf_path):
 
 # --- Parse resume with LLaMA ---
 def parse_resume_llama_text(resume_text):
+    print("Loading LLaMA model...")
     tokenizer, model = load_llama()
+    print(f"Model loaded on device: {model.device}")
+    print(f"Model dtype: {model.dtype}")
 
     system_message = {
         "role": "system",
@@ -68,16 +78,33 @@ Resume Text:
 
     prompt = system_message["content"] + "\n\n" + user_message["content"]
 
-    generator = pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_new_tokens=2000,
-        temperature=0.1,
-        top_p=0.9
-    )
-
-    output = generator(prompt)[0]["generated_text"]
+    # Tokenize input
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048)
+    print(f"Input tokens: {inputs['input_ids'].shape}")
+    
+    # Move inputs to the same device as model
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    
+    # Generate with safe parameters - using greedy decoding to avoid probability issues
+    print("Generating response...")
+    try:
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=2000,
+                do_sample=False,  # Use greedy decoding instead of sampling
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+                repetition_penalty=1.1
+            )
+        print("Generation completed successfully")
+    except Exception as e:
+        print(f"Error during generation: {str(e)}")
+        print(f"Error type: {type(e)}")
+        raise
+    
+    # Decode output
+    output = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     # --- Updated extraction logic ---
     start_marker = "```json"
