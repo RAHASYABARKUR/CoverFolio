@@ -70,6 +70,9 @@ const PortfolioEditor: React.FC = () => {
    alert('Portfolio saved successfully!');
  };
 
+  const handleChooseTemplate = () => {
+    navigate('/templates');
+  };
 
  const handlePublish = () => {
    alert('Portfolio published! (This feature is coming soon)');
@@ -156,10 +159,14 @@ const PortfolioEditor: React.FC = () => {
              </div>
            ))}
          </div>
-
+           
 
          {/* Action Buttons in Sidebar */}
+
          <div style={styles.sidebarActions}>
+           <button onClick={handleChooseTemplate} style={styles.chooseTemplateButton}>
+            🧩 Choose Template
+          </button>
            <button onClick={handleSave} style={styles.saveButton}>
              💾 Save Draft
            </button>
@@ -284,6 +291,19 @@ const styles: { [key: string]: React.CSSProperties } = {
    cursor: 'pointer',
    transition: 'all 0.2s',
  },
+
+ chooseTemplateButton: {
+  backgroundColor: 'white',
+  color: '#1f2937',
+  border: '2px solid #e2e8f0',
+  padding: '10px 16px',
+  borderRadius: '8px',
+  fontSize: '14px',
+  fontWeight: '600',
+  cursor: 'pointer',
+  transition: 'all 0.2s',
+},
+
  publishButton: {
    backgroundColor: '#48bb78',
    color: 'white',

@@ -7,7 +7,8 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-
+import TemplateGallery from "./pages/TemplateGallery";
+import Editor from "./pages/Editor";
 
 const App: React.FC = () => {
  return (
@@ -18,6 +19,8 @@ const App: React.FC = () => {
          <Route path="/" element={<GuestRoute><Home /></GuestRoute>} />
          <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
          <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+         <Route path="/templates" element={<TemplateGallery />} />
+         <Route path="/editor" element={<Editor />} />
         
          {/* Protected Routes (require authentication) */}
          <Route element={<ProtectedRoute />}>
