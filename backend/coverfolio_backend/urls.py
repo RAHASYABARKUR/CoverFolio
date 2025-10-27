@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/auth/', include('authentication.urls')),
     path('api/resume/', include('resume_parser.urls')),
     path('api/portfolio/', include('portfolio.urls')),
+    path('api/cover-letters/', include('cover_letters.urls')),
 ]
 
 # Serve media files in development

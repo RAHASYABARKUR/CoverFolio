@@ -1,0 +1,141 @@
+Coverfolio 🍀
+COMPSCI 520 - Project Proposal
+By: Anisha Prajapati, Lavanika Srinivasaraghavan, Rahasya Barkur, Shreyaa Dani,
+Somya Bharti
+Project Objective
+Our project is a web application that transforms resumes (PDF, Word, or LinkedIn)
+into customizable portfolio websites and professional cover letters. It aims to simplify
+the process of showcasing skills, experiences, and projects by providing AI-powered
+rewriting, personalized templates, and recruiter-friendly sharing tools.
+Motivation
+Many job seekers struggle to present their achievements effectively and tailor their
+applications to different roles. Traditional resumes are static, hard to personalize,
+and often fail to capture attention in competitive markets. This project addresses
+that gap by offering an AI-enhanced portfolio and cover letter generator that evolves
+with user prompts, making it easier for candidates to stand out, track recruiter
+engagement, and continuously refine their professional story.
+High-level features
+1. Authentication & User Profiles
+● User login and registration
+2. Portfolio & Cover Letter Generation
+● Portfolio generator: with 4-5 customizable UI templates
+● Cover letter generator: form-based input (company, role, activities) - AI-generated letters
+3. Resume & Data Ingestion
+● 2 forms of input:
+a. Upload resume or LinkedIn export of profile (PDF, Word)
+b. Accept form-based input from user (About, Extra-curricular, etc.)
+● Auto-parse sections (Skills, Education, Experience, Projects)
+● Editable synced portfolio (if resume updates, portfolio updates)
+High-level features (contd.)
+4. AI-Powered Enhancements
+● Enhance/Rewrite parsed sections
+● Suggest additional skills
+● Auto-generate project pitches
+5. Chatbot-style guidance
+● For improvements and editing portfolio
+6. Interaction & Communication
+● Contact form (email) embedded in portfolio
+● Recruiter-friendly links for easy sharing
+High-level features (contd.)
+7. Analytics & Insights
+● Track views and downloads
+● Optional event tracking (e.g., clicks, time spent)
+8. Hosting the portfolio and make cover letter downloadable
+Use Case Diagram 1 and 2 - Portfolio Generation
+Use Case UC - #1 Upload Resume and Parse
+Related Requirements Upload resume or LinkedIn export of profile (PDF, Word)
+Preconditions User is registered and logged in
+Main Flow (success) -> 1. User chooses Upload Resume and provides
+PDF/Word/LinkedIn export.
+<- 2. Parsing worker normalizes sections (About, Skills,
+Education, Experience, Projects) and produces a typed payload.
+<- 3. Backend saves parsed data and returns preview to user for
+verification.
+-> 4. User accepts or edits parsed fields.
+Alternative Flows Parsing fails → show error + request re-upload or manual entry.
+Postconditions Typed profile exists in DB and is available for portfolio generation.
+Use Case UC - #2 Parsed Resume to Portfolio
+Related Requirements Upload resume or LinkedIn export of profile (PDF, Word)
+Initiating Actor User
+Actor’s Goal Generate static portfolio website
+Participating Actors Gen AI
+Preconditions Registered User
+Postconditions Portfolio is generated
+Flow of events Main Success -> 1. Registered User uploads Resume/LinkedIn
+Scenario <- 2. Profile is parsed, bullets are converted to crisp summaries
+using participating actor Gen AI’s help and details with
+suggestions and verified by user
+-> 3. User edits and approves the content to go on portfolio
+<- 4. System suggests themes for user to select
+-> 5. User select themes for portfolio
+<- 6. System generates portfolio ready to host
+Use Case Diagram 3 - Cover Letter Generation
+Use Case UC - #3 Resume to Cover Letter with Job Description
+Related Requirements Resume and Job Description
+Initiating Actor User
+Actor’s Goal Cover Letter Generation
+Participating Actors User, Gen AI
+Preconditions Registered User, User has profile or uploads resume; and provides
+job/company details in form.
+Postconditions Cover letter saved and downloadable.
+Flow of events Main Success -> 1. User enters Resume and fills form (company, role, job
+Scenario description, target project, extracurriculars).
+<- 2. System uses participating actor LLM/GenAI to generate a
+tailored context relevant instruct based cover letter
+-> 3. User can edit and download final letter (PDF).
+Use Case Diagram 4 - Edit Portfolio and sync on re-upload
+Use Case UC - #4 Edit Portfolio & Sync on Re-upload
+Actors User, Parsing Service
+Preconditions Portfolio exists.
+Main Flow (success) -> 1. User re-uploads an updated resume
+<- 2. System parses new resume and highlights changed fields
+-> 3. User approves sync; changes are applied to portfolio and
+versioned
+Postconditions Portfolio updated
+Use Case 5 : AI Enhancements and Chatbot Guidance
+Use Case UC - #5 AI Enhancements & Chatbot Guidance
+Actors User, GenAI/LLM
+Preconditions Generated/existing Portfolio/Cover letter
+Postconditions Portfolio/Cover letter content updated
+Main Flow (Success scenario) -> 1. User opens the AI assistant; requests rewriting or skill
+suggestions.
+<- 2. GenAI returns suggestions, user reviews and applies
+changes.
+Use Case Diagram 6 - Sharing, Contact Form & Analytics
+Use Case UC - #6 Sharing, Contact Form & Analytics
+Actors Recruiter (external visitor), User, Analytics Service
+Preconditions Portfolio published
+Postconditions Events persisted; analytics view updated.
+Main Flow (Success scenario) -> 1. Recruiter visits portfolio link and may submit contact form
+<- 2. System logs view/download events (optionally to Kafka),
+increments counters in DB/Redis.
+-> 3. User views analytics dashboard with counts and time
+windows.
+Feasibility and Scope
+The project will be developed using
+● Frontend: React, TypeScript, and Tailwind
+● Backend data persistence: Django GraphQL APIs and Postgres
+● Resume ingestion: handled by a Node.js + TypeScript parsing service
+● AI enhancements: powered by LangChain with LLM integration
+● Redis: supports caching
+All team members have prior experience in web development, databases, and AI/ML
+frameworks, making the technical requirements achievable in 12 weeks.
+Preliminary Timeline and Work Distribution
+●
+Week 1–2: Finalize system design and architecture, set up project repo, database schema. (All)
+●
+Week 3–4: Implement user authentication and registration (backend - Lavanika, Rahasya; frontend - Somya,
+Shreyaa).
+●
+Week 5–6: Develop resume upload and parsing service (PDF/Word) and integrate with backend.(Anisha,
+Lavanika)
+●
+Week 7–8: Build portfolio generator with customizable templates; implement AI assistant for resume
+rewriting and skill suggestions. (Shreyaa, Somya)
+●
+Week 9–10: Add cover letter generator, recruiter view/download analytics, and chatbot-style portfolio
+updates.(Rahasya, Anisha)
+●
+Week 11: Conduct testing, bug fixing across services. (All)
+●
+Week 12: Finalize deployment, prepare demo portfolios, and complete final presentation. (All)

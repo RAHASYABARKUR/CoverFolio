@@ -18,7 +18,7 @@ from .serializers import (
     ContactSerializer,
     PublicationSerializer,
     PatentSerializer,
-    OtherSerializer
+    OtherSerializer,
 )
 from resume_parser.models import Resume
 
@@ -1113,4 +1113,6 @@ def other_detail(request, pk):
         return Response({
             'message': 'Other item deleted successfully'
         }, status=status.HTTP_200_OK)
+
+
 

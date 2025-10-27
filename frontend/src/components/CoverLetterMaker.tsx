@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../services/api';
 
 
 const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -6,22 +7,38 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
  const [jobDescription, setJobDescription] = useState('');
  const [additionalInfo, setAdditionalInfo] = useState('');
  const [companyName, setCompanyName] = useState('');
+ const [isGenerating, setIsGenerating] = useState(false);
+ const [generatedLetter, setGeneratedLetter] = useState('');
+ const [error, setError] = useState('');
 
 
- const handleGenerate = () => {
+ const handleGenerate = async () => {
    if (!role || !jobDescription) {
      alert('Please fill in the required fields (Role and Job Description)');
      return;
    }
   
-   // TODO: Implement cover letter generation logic
-   console.log('Generating cover letter:', {
-     role,
-     companyName,
-     jobDescription,
-     additionalInfo,
-   });
-   alert('Cover letter generation functionality coming soon!');
+   setIsGenerating(true);
+   setError('');
+   
+   try {
+     const response = await api.post('/api/cover-letters/generate/', {
+       role,
+       company_name: companyName,
+       job_description: jobDescription,
+       additional_info: additionalInfo,
+       title: `Cover Letter for ${role} at ${companyName || 'Company'}`
+     });
+     
+     setGeneratedLetter(response.data.cover_letter.generated_content);
+     alert('Cover letter generated successfully!');
+   } catch (error: any) {
+     console.error('Error generating cover letter:', error);
+     setError(error.response?.data?.error || 'Failed to generate cover letter');
+     alert('Error generating cover letter. Please try again.');
+   } finally {
+     setIsGenerating(false);
+   }
  };
 
 
@@ -129,31 +146,66 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
              onClick={handleGenerate}
              style={{
                ...styles.submitButton,
-               ...(isFormValid ? {} : {
+               ...(isFormValid && !isGenerating ? {} : {
                  backgroundColor: '#cbd5e0',
                  cursor: 'not-allowed',
                  boxShadow: 'none',
                })
              }}
-             disabled={!isFormValid}
+             disabled={!isFormValid || isGenerating}
              onMouseEnter={(e) => {
-               if (isFormValid) {
+               if (isFormValid && !isGenerating) {
                  e.currentTarget.style.backgroundColor = '#5a67d8';
                  e.currentTarget.style.transform = 'translateY(-2px)';
                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
                }
              }}
              onMouseLeave={(e) => {
-               if (isFormValid) {
+               if (isFormValid && !isGenerating) {
                  e.currentTarget.style.backgroundColor = '#667eea';
                  e.currentTarget.style.transform = 'translateY(0)';
                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
                }
              }}
            >
-             {isFormValid ? 'Generate Cover Letter ✨' : 'Please fill in required fields'}
+             {isGenerating ? 'Generating... ⏳' : 
+              isFormValid ? 'Generate Cover Letter ✨' : 
+              'Please fill in required fields'}
            </button>
          </div>
+
+         {error && (
+           <div style={styles.errorMessage}>
+             ❌ {error}
+           </div>
+         )}
+
+         {generatedLetter && (
+           <div style={styles.generatedLetterContainer}>
+             <h3 style={styles.generatedLetterTitle}>Generated Cover Letter</h3>
+             <div style={styles.generatedLetterContent}>
+               {generatedLetter.split('\n').map((line, index) => (
+                 <p key={index} style={styles.generatedLetterLine}>
+                   {line}
+                 </p>
+               ))}
+             </div>
+             <div style={styles.generatedLetterActions}>
+               <button
+                 onClick={() => navigator.clipboard.writeText(generatedLetter)}
+                 style={styles.copyButton}
+               >
+                 📋 Copy to Clipboard
+               </button>
+               <button
+                 onClick={() => setGeneratedLetter('')}
+                 style={styles.clearButton}
+               >
+                 🗑️ Clear
+               </button>
+             </div>
+           </div>
+         )}
 
 
          <div style={styles.noteSection}>
@@ -311,6 +363,71 @@ const styles: { [key: string]: React.CSSProperties } = {
    color: '#4a5568',
    lineHeight: '1.6',
    margin: 0,
+ },
+ errorMessage: {
+   backgroundColor: '#fed7d7',
+   color: '#c53030',
+   padding: '12px 16px',
+   borderRadius: '8px',
+   marginTop: '16px',
+   fontSize: '14px',
+   border: '1px solid #feb2b2',
+ },
+ generatedLetterContainer: {
+   marginTop: '24px',
+   padding: '20px',
+   backgroundColor: '#f7fafc',
+   borderRadius: '12px',
+   border: '1px solid #e2e8f0',
+ },
+ generatedLetterTitle: {
+   fontSize: '18px',
+   fontWeight: '600',
+   color: '#2d3748',
+   margin: '0 0 16px 0',
+ },
+ generatedLetterContent: {
+   backgroundColor: 'white',
+   padding: '20px',
+   borderRadius: '8px',
+   border: '1px solid #e2e8f0',
+   marginBottom: '16px',
+   maxHeight: '400px',
+   overflowY: 'auto',
+   whiteSpace: 'pre-wrap',
+   lineHeight: '1.6',
+   fontSize: '14px',
+   color: '#2d3748',
+ },
+ generatedLetterLine: {
+   margin: '0 0 8px 0',
+ },
+ generatedLetterActions: {
+   display: 'flex',
+   gap: '12px',
+   justifyContent: 'flex-end',
+ },
+ copyButton: {
+   backgroundColor: '#48bb78',
+   color: 'white',
+   border: 'none',
+   padding: '8px 16px',
+   borderRadius: '6px',
+   cursor: 'pointer',
+   fontSize: '14px',
+   fontWeight: '500',
+   transition: 'all 0.2s ease',
+ },
+ clearButton: {
+   backgroundColor: '#e53e3e',
+   color: 'white',
+   border: 'none',
+   padding: '8px 16px',
+   borderRadius: '6px',
+   cursor: 'pointer',
+   fontSize: '14px',
+   fontWeight: '500',
+   transition: 'all 0.2s ease',
  },
 };
 

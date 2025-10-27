@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'authentication',
     'resume_parser',
     'portfolio',
+    'cover_letters',
 ]
 
 MIDDLEWARE = [

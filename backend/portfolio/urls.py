@@ -52,4 +52,5 @@ urlpatterns = [
     # Other endpoints
     path('others/', views.other_list_create, name='other-list-create'),
     path('others/<int:pk>/', views.other_detail, name='other-detail'),
+    
 ]
