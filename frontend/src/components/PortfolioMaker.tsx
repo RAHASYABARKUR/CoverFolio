@@ -10,6 +10,8 @@ const PortfolioMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
  const [additionalInfo, setAdditionalInfo] = useState('');
  const [uploading, setUploading] = useState(false);
  const [error, setError] = useState('');
+ const [lastUploaded, setLastUploaded] = useState<any>(null);
+
 
 
  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,29 +32,37 @@ const PortfolioMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
    try {
      // TODO: Uncomment when backend is ready
-     // const formData = new FormData();
-     // formData.append('file', selectedFile);
-     // if (hobbies) formData.append('hobbies', hobbies);
-     // if (additionalInfo) formData.append('additional_info', additionalInfo);
+     const formData = new FormData();
+     formData.append('file', selectedFile);
+     if (hobbies) formData.append('hobbies', hobbies);
+     if (additionalInfo) formData.append('additional_info', additionalInfo);
     
-     // const response = await api.post('/resumes/upload/', formData, {
-     //   headers: {
-     //     'Content-Type': 'multipart/form-data',
-     //   },
-     // });
+     const response = await api.post('/api/resume/upload/', formData, {
+       headers: {
+         'Content-Type': 'multipart/form-data',
+       },
+     });
     
      // Navigate to the portfolio editor page after successful upload
      // navigate(`/dashboard/portfolio/preview/${response.data.id}`);
     
      // Mock upload for now
-     await new Promise(resolve => setTimeout(resolve, 1000));
+    //  await new Promise(resolve => setTimeout(resolve, 1000));
     
-     // Mock resume ID for now
-     const mockResumeId = Date.now();
-    
+    //  // Mock resume ID for now
+    //  const mockResumeId = Date.now();
+    console.log('upload response:', response.data);
+    setLastUploaded(response.data.resume); // <-- keep it on page and render below
+
+
+     const resumeId = response.data.resume.id;
      // Navigate directly to the portfolio editor page
-     navigate(`/dashboard/portfolio/preview/${mockResumeId}`);
+     navigate(`/dashboard/portfolio/preview/${resumeId}`);
    } catch (err: any) {
+    const msg = err?.response?.data?.error || 'Failed to upload resume';
+    setError(msg);
+    alert(msg);
+
      setError(err.response?.data?.error || 'Failed to upload resume');
      alert(error || 'Failed to upload resume. Please try again.');
    } finally {
@@ -170,6 +180,14 @@ const PortfolioMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
        >
          {uploading ? 'Uploading...' : selectedFile ? 'Generate Portfolio →' : 'Please upload a resume first'}
        </button>
+       {lastUploaded?.structured_data && (
+            <div style={{ marginTop: 16, background: '#f7fafc', padding: 16, borderRadius: 8 }}>
+              <h4 style={{ marginTop: 0 }}>Parsed structured_data</h4>
+              <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap' }}>
+                {JSON.stringify(lastUploaded.structured_data, null, 2)}
+              </pre>
+            </div>
+          )}
      </div>
    </div>
  );

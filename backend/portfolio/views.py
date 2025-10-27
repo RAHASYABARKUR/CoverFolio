@@ -21,6 +21,7 @@ from .serializers import (
     OtherSerializer
 )
 from resume_parser.models import Resume
+from .normalize import clean_structured
 
 
 # ==================== Portfolio Views ====================
@@ -664,8 +665,8 @@ def populate_from_resume(request, resume_id):
             'error': 'Resume has not been parsed yet. Please re-upload the resume.'
         }, status=status.HTTP_400_BAD_REQUEST)
     
-    data = resume.structured_data
-    overwrite = request.data.get('overwrite', False)
+    data = clean_structured(resume.structured_data)
+    overwrite = request.data.get('overwrite', True)
     
     # Get or create portfolio
     portfolio, created = Portfolio.objects.get_or_create(
@@ -683,6 +684,21 @@ def populate_from_resume(request, resume_id):
         portfolio.linkedin = data.get('linkedin', portfolio.linkedin)
         portfolio.save()
     
+    # If overwrite, wipe children so no old data remains
+    if overwrite and not created:
+        Education.objects.filter(portfolio=portfolio).delete()
+        Experience.objects.filter(portfolio=portfolio).delete()
+        Project.objects.filter(portfolio=portfolio).delete()
+        Skill.objects.filter(portfolio=portfolio).delete()
+        Hobby.objects.filter(portfolio=portfolio).delete()
+
+    # Optionally also refresh top-level fields on overwrite
+    if overwrite:
+        portfolio.github = data.get('github', portfolio.github)
+        portfolio.linkedin = data.get('linkedin', portfolio.linkedin)
+        if data.get('name'):
+            portfolio.title = data.get('name')
+        portfolio.save()
     stats = {
         'created': {'education': 0, 'experience': 0, 'projects': 0, 'skills': 0, 'hobbies': 0},
         'skipped': {'education': 0, 'experience': 0, 'projects': 0, 'skills': 0, 'hobbies': 0}
