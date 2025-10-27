@@ -2,7 +2,7 @@ import pdfplumber
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 import json
 from typing import List, Dict, Any
-
+import time
 
 MODEL_NAME = "meta-llama/Llama-3.2-3B-Instruct"
 
@@ -43,22 +43,22 @@ Replace all placeholders with actual data. If information is missing, use null.
 Return only valid JSON.
 
 {{
-    "Name": "FILL_HERE",
-    "Email": "FILL_HERE",
-    "Phone": "FILL_HERE",
-    "LinkedIn": "FILL_HERE",
-    "GitHub": "FILL_HERE",
-    "Education": [
-        {{"Degree": "FILL_HERE", "Institution": "FILL_HERE", "Year": "FILL_HERE"}}
+    "name": "FILL_HERE",
+    "email": "FILL_HERE",
+    "phone": "FILL_HERE",
+    "linkedin": "FILL_HERE",
+    "github": "FILL_HERE",
+    "education": [
+        {{"degree": "FILL_HERE", "institution": "FILL_HERE", "year": "FILL_HERE","gpa": "FILL_HERE"}}
     ],
-    "Experience": [
-        {{"Company": "FILL_HERE", "Role": "FILL_HERE", "Years": "FILL_HERE", "Role Summary": "FILL_HERE"}}
+    "experience": [
+        {{"company": "FILL_HERE", "role": "FILL_HERE", "years": "FILL_HERE", "role_summary": "FILL_HERE"}}
     ],
-    "Projects": [
-        {{"Title": "FILL_HERE", "Description": "FILL_HERE", "Technologies": []}}
+    "projects": [
+        {{"title": "FILL_HERE", "description": "FILL_HERE", "technologies": []}}
     ],
-    "Skills": [],
-    "Extracurriculars": []
+    "skills": ["FILL_HERE"],
+    "extracurriculars": ["FILL_HERE"]
 }}
 
 Resume Text:
@@ -99,15 +99,17 @@ Resume Text:
     return data
 
 def parse_resume_llama(pdf_path: str, model_id: str = "meta-llama/Llama-3.2-3B-Instruct") -> Dict[str, Any]:
-    with open('C:\\Users\\rbOut\\OneDrive\\Documents\\MSCS\\520\\CoverFolio\\backend\\resume_parser\\parsed_resume.json') as json_data:
-        d = json.load(json_data)
-    return d
+    # with open('C:\\Users\\rbOut\\OneDrive\\Documents\\MSCS\\520\\CoverFolio\\backend\\resume_parser\\parsed_resume.json') as json_data:
+    #     d = json.load(json_data)
+    # return d
     resume_text = extract_text_from_pdf(pdf_path)
 
     if not resume_text.strip():
         print("⚠️ No text extracted from PDF. Check PDF format.")
     else:
+        start = time.time()
         parsed_data = parse_resume_llama_text(resume_text)
+        print("Time taken to parse resume ",time.time()-start)
         return parsed_data
 # --- Main ---
 if __name__ == "__main__":
