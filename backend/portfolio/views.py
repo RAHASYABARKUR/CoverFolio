@@ -766,8 +766,8 @@ def populate_from_resume(request, resume_id):
                 degree=degree_choice,
                 institution=edu_data.get('institution', 'Unknown Institution')[:200],
                 field_of_study=edu_data.get('degree', 'Not Specified')[:200],
-                start_date=start_date,
-                end_date=end_date,
+                start_date=edu_data.get('start_date', start_date),
+                end_date=edu_data.get('end_date', end_date),
                 grade=edu_data.get('gpa', '')[:50] if edu_data.get('gpa') else ''
             )
             stats['created']['education'] += 1
@@ -824,9 +824,9 @@ def populate_from_resume(request, resume_id):
                 company=exp_data.get('company', '')[:200],
                 position=exp_data.get('role', '')[:200],
                 description=exp_data.get('role_summary', ''),
-                start_date=start_date,
-                end_date=end_date,
-                is_current=is_current
+                start_date=exp_data.get('start_date', start_date),
+                end_date=exp_data.get('end_date', end_date),
+                is_current=exp_data.get('is_current', is_current)
             )
             stats['created']['experience'] += 1
         except Exception as e:
