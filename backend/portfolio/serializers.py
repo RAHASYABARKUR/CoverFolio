@@ -72,45 +72,89 @@ class ExperienceSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'duration']
     
     def get_duration(self, obj):
-        """Calculate duration of employment."""
-        if obj.start_date:
-            from datetime import date
-            end = obj.end_date or date.today()
-            delta = end - obj.start_date
-            years = delta.days // 365
-            months = (delta.days % 365) // 30
-            
-            if years > 0 and months > 0:
-                return f"{years} year{'s' if years > 1 else ''}, {months} month{'s' if months > 1 else ''}"
-            elif years > 0:
-                return f"{years} year{'s' if years > 1 else ''}"
-            else:
-                return f"{months} month{'s' if months > 1 else ''}"
-        return None
-    
+        """Return human-friendly duration; works even if dates are stored as strings."""
+
+        import datetime
+        import calendar
+
+        start = obj.start_date
+        end = obj.end_date
+
+        if not start:
+            return None
+
+        # If using Present
+        if obj.is_current or (end and end.lower() == "present"):
+            end = datetime.date.today().strftime("%Y-%m-%d")
+
+        # Convert strings like "September 2024" or "2024" → YYYY-MM-DD
+        def parse_date(date_str):
+            if not date_str:
+                return None
+
+            # Already ISO format?
+            try:
+                return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+            except:
+                pass
+
+            parts = date_str.split()
+
+            # Case: "2024"
+            if len(parts) == 1 and parts[0].isdigit() and len(parts[0]) == 4:
+                return datetime.date(int(parts[0]), 1, 1)
+
+            # Case: "September 2024"
+            if len(parts) == 2:
+                month_name, year = parts
+                try:
+                    month = list(calendar.month_name).index(month_name.capitalize())
+                    return datetime.date(int(year), month, 1)
+                except:
+                    return None
+
+            return None
+
+        start_dt = parse_date(start)
+        end_dt = parse_date(end)
+
+        if not start_dt or not end_dt:
+            return None
+
+        delta = end_dt - start_dt
+        years = delta.days // 365
+        months = (delta.days % 365) // 30
+
+        if years > 0 and months > 0:
+            return f"{years} yr {months} mo"
+        elif years > 0:
+            return f"{years} yr"
+        elif months > 0:
+            return f"{months} mo"
+
+        return "Less than 1 month"
+
     def validate(self, data):
-        """Validate experience dates."""
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
-        is_current = data.get('is_current', False)
-        
-        if start_date and end_date and not is_current and end_date < start_date:
+        """Relaxed date validation for string-based dates."""
+
+        start = data.get("start_date")
+        end = data.get("end_date")
+        is_current = data.get("is_current")
+
+        # If current, no end date
+        if is_current and end:
             raise serializers.ValidationError({
-                'end_date': 'End date cannot be before start date.'
+                'end_date': 'Currently enrolled should not have an end date.'
             })
-        
-        if is_current and end_date:
-            raise serializers.ValidationError({
-                'end_date': 'Current positions should not have an end date.'
-            })
-        
+
+        # No strict date comparison — allow strings
         return data
 
 
 class EducationSerializer(serializers.ModelSerializer):
-    """Serializer for Education model."""
+    """Serializer for Education model with flexible string dates."""
     duration = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Education
         fields = [
@@ -119,36 +163,84 @@ class EducationSerializer(serializers.ModelSerializer):
             'institution_url', 'order', 'duration', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'duration']
-    
+
     def get_duration(self, obj):
-        """Calculate duration of education."""
-        if obj.start_date:
-            from datetime import date
-            end = obj.end_date or date.today()
-            delta = end - obj.start_date
-            years = delta.days // 365
-            
-            if years > 0:
-                return f"{years} year{'s' if years > 1 else ''}"
-            return "Less than 1 year"
-        return None
-    
+        """Return human-friendly duration; works even if dates are stored as strings."""
+
+        import datetime
+        import calendar
+
+        start = obj.start_date
+        end = obj.end_date
+
+        if not start:
+            return None
+
+        # If using Present
+        if obj.is_current or (end and end.lower() == "present"):
+            end = datetime.date.today().strftime("%Y-%m-%d")
+
+        # Convert strings like "September 2024" or "2024" → YYYY-MM-DD
+        def parse_date(date_str):
+            if not date_str:
+                return None
+
+            # Already ISO format?
+            try:
+                return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+            except:
+                pass
+
+            parts = date_str.split()
+
+            # Case: "2024"
+            if len(parts) == 1 and parts[0].isdigit() and len(parts[0]) == 4:
+                return datetime.date(int(parts[0]), 1, 1)
+
+            # Case: "September 2024"
+            if len(parts) == 2:
+                month_name, year = parts
+                try:
+                    month = list(calendar.month_name).index(month_name.capitalize())
+                    return datetime.date(int(year), month, 1)
+                except:
+                    return None
+
+            return None
+
+        start_dt = parse_date(start)
+        end_dt = parse_date(end)
+
+        if not start_dt or not end_dt:
+            return None
+
+        delta = end_dt - start_dt
+        years = delta.days // 365
+        months = (delta.days % 365) // 30
+
+        if years > 0 and months > 0:
+            return f"{years} yr {months} mo"
+        elif years > 0:
+            return f"{years} yr"
+        elif months > 0:
+            return f"{months} mo"
+
+        return "Less than 1 month"
+
     def validate(self, data):
-        """Validate education dates."""
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
-        is_current = data.get('is_current', False)
-        
-        if start_date and end_date and not is_current and end_date < start_date:
-            raise serializers.ValidationError({
-                'end_date': 'End date cannot be before start date.'
-            })
-        
-        if is_current and end_date:
+        """Relaxed date validation for string-based dates."""
+
+        start = data.get("start_date")
+        end = data.get("end_date")
+        is_current = data.get("is_current")
+
+        # If current, no end date
+        if is_current and end:
             raise serializers.ValidationError({
                 'end_date': 'Currently enrolled should not have an end date.'
             })
-        
+
+        # No strict date comparison — allow strings
         return data
 
 

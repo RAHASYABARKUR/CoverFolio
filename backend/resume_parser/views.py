@@ -14,6 +14,7 @@ from portfolio.views import populate_from_resume
 from rest_framework.test import APIRequestFactory,force_authenticate
 # from .text_extractor import extract_text_from_pdf_better
 from .parser import parse_resume_llama,extract_text_from_pdf
+from .resume_parser_gemini import parse_resume_gemini
 # from portfolio.normalize import clean_structured
 # from .parser import parse,extract_text_from_pdf
 
@@ -42,7 +43,9 @@ def upload_resume(request):
         full_file_path = default_storage.path(saved_path)
         print(full_file_path)
         try:
-            structured_data = parse_resume_llama(full_file_path)
+            #structured_data = parse_resume_llama(full_file_path)
+            structured_data = parse_resume_gemini(full_file_path,api_key ="AIzaSyAZLyAlpUdTr5fKBfRZ9nRDWP6AoHRRsNY")
+            print(structured_data)
             extracted_text = extract_text_from_pdf(full_file_path)
         except Exception as e:
             return Response(
@@ -181,7 +184,7 @@ def upload_resume(request):
         # populate_request = factory.post(f'/api/portfolio/populate-from-resume/{resume.id}/', {'overwrite': True})
         # populate_request.user = request.user
         # response = populate_from_resume(populate_request, resume.id)
-        # print("📘 Portfolio auto-populate result:", response.data)
+        # print(" Portfolio auto-populate result:", response.data)
         # Auto-populate the portfolio from this resume, authenticated
         try:
             factory = APIRequestFactory()
@@ -195,7 +198,7 @@ def upload_resume(request):
 
             populate_resp = populate_from_resume(populate_req, resume.id)
             portfolio_result = getattr(populate_resp, 'data', None)
-            print("📘 Portfolio auto-populate result:", portfolio_result)
+            print(" Portfolio auto-populate result:", portfolio_result)
         except Exception as e:
             # Don’t fail the upload if population fails
             print("⚠️ Portfolio auto-populate failed:", e)
