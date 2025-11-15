@@ -271,3 +271,63 @@ def delete_resume(request, resume_id):
         return Response({
             'error': 'Resume not found'
         }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_cover_letter(request):
+    """
+    Generate a cover letter using resume data and job description.
+    
+    POST /api/resume/generate-cover-letter/
+    Body: {
+        "resume_id": 1,
+        "role": "Software Engineer",
+        "company_name": "Google",
+        "job_description": "..."
+    }
+    """
+    from .cover_letter_generator import generate_cover_letter_gemini
+    
+    resume_id = request.data.get('resume_id')
+    role = request.data.get('role')
+    job_description = request.data.get('job_description')
+    company_name = request.data.get('company_name', '')
+    
+    if not resume_id or not role or not job_description:
+        return Response({
+            'error': 'Missing required fields: resume_id, role, job_description'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Get the resume
+        resume = Resume.objects.get(id=resume_id, user=request.user)
+        
+        if not resume.structured_data:
+            return Response({
+                'error': 'Resume has not been parsed yet'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate cover letter
+        api_key = "AIzaSyAZLyAlpUdTr5fKBfRZ9nRDWP6AoHRRsNY"
+        cover_letter = generate_cover_letter_gemini(
+            resume_data=resume.structured_data,
+            job_description=job_description,
+            role=role,
+            company_name=company_name,
+            api_key=api_key
+        )
+        
+        return Response({
+            'cover_letter': cover_letter,
+            'resume_data': resume.structured_data
+        }, status=status.HTTP_200_OK)
+        
+    except Resume.DoesNotExist:
+        return Response({
+            'error': 'Resume not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'error': f'Failed to generate cover letter: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
