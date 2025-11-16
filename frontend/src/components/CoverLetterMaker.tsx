@@ -21,6 +21,15 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [editedCoverLetter, setEditedCoverLetter] = useState('');
+  
+  // Template selection state
+  const [selectedTemplate, setSelectedTemplate] = useState<'professional' | 'modern' | 'creative' | 'header'>('professional');
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
+  
+  // Formatting state
+  const [fontFamily, setFontFamily] = useState<'Arial' | 'Times New Roman' | 'Georgia' | 'Garamond' | 'Trebuchet MS'>('Arial');
+  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'justify'>('left');
 
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,25 +99,9 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleDownloadPDF = () => {
-    // Create a simple PDF using HTML canvas and download
     const content = editedCoverLetter;
-    const lines = content.split('\n');
+    const template = getTemplateStyles(selectedTemplate, fontFamily, fontSize, textAlign);
     
-    // Create a temporary canvas to measure text
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.font = '12px Arial';
-    
-    // Create PDF content
-    const pageWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const margin = 20;
-    const maxWidth = pageWidth - (2 * margin);
-    const lineHeight = 6;
-    
-    // Simple PDF generation using data URL
     const pdfWindow = window.open('', '_blank');
     if (!pdfWindow) {
       alert('Please allow pop-ups to download PDF');
@@ -121,22 +114,11 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <head>
         <title>Cover Letter</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            font-size: 12pt;
-            line-height: 1.6;
-            margin: 2cm;
-            max-width: 21cm;
-          }
-          pre {
-            white-space: pre-wrap;
-            font-family: Arial, sans-serif;
-            margin: 0;
-          }
+          ${template.styles}
         </style>
       </head>
       <body>
-        <pre>${content}</pre>
+        ${template.render(content)}
         <script>
           window.onload = function() {
             window.print();
@@ -148,6 +130,379 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     
     pdfWindow.document.write(htmlContent);
     pdfWindow.document.close();
+  };
+
+  const applyFormatting = (format: 'bold' | 'italic' | 'underline') => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = editedCoverLetter.substring(start, end);
+    
+    if (!selectedText) {
+      alert('Please select text to format');
+      return;
+    }
+    
+    let formattedText = '';
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText}*`;
+        break;
+      case 'underline':
+        formattedText = `__${selectedText}__`;
+        break;
+    }
+    
+    const newText = 
+      editedCoverLetter.substring(0, start) + 
+      formattedText + 
+      editedCoverLetter.substring(end);
+    
+    setEditedCoverLetter(newText);
+  };
+
+  const convertMarkdownToHtml = (text: string): string => {
+    // Split into paragraphs (double line breaks)
+    const paragraphs = text.split(/\n\s*\n/);
+    
+    // Convert each paragraph
+    const formattedParagraphs = paragraphs.map(para => {
+      // Apply formatting within paragraph
+      let formatted = para
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/__(.*?)__/g, '<u>$1</u>')
+        .replace(/\n/g, '<br>');
+      
+      // Wrap in paragraph tags if not empty
+      return formatted.trim() ? `<p>${formatted}</p>` : '';
+    }).filter(p => p); // Remove empty paragraphs
+    
+    return formattedParagraphs.join('\n');
+  };
+
+  const getTemplateStyles = (templateName: string, font: string, size: string, align: string) => {
+    const fontSizes = {
+      small: '11pt',
+      medium: '12pt',
+      large: '13pt'
+    };
+    
+    const fontSize = fontSizes[size as keyof typeof fontSizes];
+    
+    // Get proper font-family with fallbacks
+    const getFontFamily = (fontName: string) => {
+      switch(fontName) {
+        case 'Arial':
+          return 'Arial, Helvetica, sans-serif';
+        case 'Times New Roman':
+          return '"Times New Roman", Times, serif';
+        case 'Georgia':
+          return 'Georgia, serif';
+        case 'Garamond':
+          return 'Garamond, "Hoefler Text", "Times New Roman", serif';
+        case 'Trebuchet MS':
+          return '"Trebuchet MS", "Lucida Grande", sans-serif';
+        default:
+          return 'Arial, sans-serif';
+      }
+    };
+    
+    const fontFamily = getFontFamily(font);
+    
+    // Add Google Fonts import for Calibri alternative (Carlito)
+    const fontImport = font === 'Calibri' ? '@import url(\'https://fonts.googleapis.com/css2?family=Carlito&display=swap\');' : '';
+    
+    const templates = {
+      professional: {
+        styles: `
+          ${fontImport}
+          @page { margin: 2cm; }
+          body {
+            font-family: ${fontFamily};
+            font-size: ${fontSize};
+            line-height: 1.5;
+            color: #000;
+            margin: 0;
+            padding: 2cm;
+          }
+          .cover-letter {
+            max-width: 21cm;
+            margin: 0 auto;
+            text-align: ${align};
+          }
+          .content {
+            white-space: pre-wrap;
+          }
+          p {
+            margin-bottom: 0.3em;
+            margin-top: 0;
+          }
+          br {
+            display: block;
+            margin: 0.05em 0;
+            content: "";
+          }
+          strong { font-weight: bold; }
+          em { font-style: italic; }
+          u { text-decoration: underline; }
+        `,
+        render: (content: string) => `
+          <div class="cover-letter">
+            <div class="content">${convertMarkdownToHtml(content)}</div>
+          </div>
+        `
+      },
+      modern: {
+        styles: `
+          ${fontImport}
+          @page { margin: 1.5cm; }
+          body {
+            font-family: ${fontFamily};
+            font-size: ${fontSize};
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 1.5cm;
+            background: #fff;
+          }
+          .cover-letter {
+            max-width: 21cm;
+            margin: 0 auto;
+            position: relative;
+            text-align: ${align};
+          }
+          .accent-bar {
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+            position: absolute;
+            left: -20px;
+            top: 0;
+          }
+          .content {
+            white-space: pre-wrap;
+            padding-left: 20px;
+          }
+          p {
+            margin-bottom: 0.3em;
+            margin-top: 0;
+          }
+          br {
+            display: block;
+            margin: 0.05em 0;
+            content: "";
+          }
+          strong { font-weight: bold; color: #667eea; }
+          em { font-style: italic; }
+          u { text-decoration: underline; }
+        `,
+        render: (content: string) => `
+          <div class="cover-letter">
+            <div class="accent-bar"></div>
+            <div class="content">${convertMarkdownToHtml(content)}</div>
+          </div>
+        `
+      },
+      creative: {
+        styles: `
+          ${fontImport}
+          @page { margin: 2cm; }
+          body {
+            font-family: ${fontFamily};
+            font-size: ${fontSize};
+            line-height: 1.5;
+            color: #2d3748;
+            margin: 0;
+            padding: 2cm;
+            background: #fff;
+          }
+          .cover-letter {
+            max-width: 21cm;
+            margin: 0 auto;
+            border-top: 3px solid #667eea;
+            border-bottom: 3px solid #667eea;
+            padding: 2em 0;
+            text-align: ${align};
+          }
+          .content {
+            white-space: pre-wrap;
+          }
+          .content::first-letter {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            float: left;
+            line-height: 1;
+            margin-right: 0.1em;
+          }
+          p {
+            margin-bottom: 0.3em;
+            margin-top: 0;
+          }
+          br {
+            display: block;
+            margin: 0.05em 0;
+            content: "";
+          }
+          strong { font-weight: bold; }
+          em { font-style: italic; }
+          u { text-decoration: underline; }
+        `,
+        render: (content: string) => `
+          <div class="cover-letter">
+            <div class="content">${convertMarkdownToHtml(content)}</div>
+          </div>
+        `
+      },
+      header: {
+        styles: `
+          ${fontImport}
+          @page { margin: 0; }
+          body {
+            font-family: ${fontFamily};
+            font-size: ${fontSize};
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+          }
+          .cover-letter {
+            max-width: 21cm;
+            margin: 0 auto;
+          }
+          .header-bar {
+            background: linear-gradient(135deg, #2d3561 0%, #4a5578 100%);
+            padding: 30px 40px;
+            color: white;
+          }
+          .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+          }
+          .name-section {
+            flex: 1;
+          }
+          .name {
+            font-size: 24pt;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            letter-spacing: 1px;
+          }
+          .title {
+            font-size: 11pt;
+            margin: 0;
+            opacity: 0.9;
+            font-weight: 400;
+            line-height: 1.4;
+          }
+          .contact-info {
+            text-align: right;
+            font-size: 9pt;
+            line-height: 1.8;
+            display: none;
+          }
+          .contact-item {
+            margin: 3px 0;
+            display: block;
+          }
+          .contact-label {
+            display: inline-block;
+            width: 15px;
+            font-weight: bold;
+            margin-right: 8px;
+          }
+          .content-area {
+            padding: 40px;
+            text-align: ${align};
+          }
+          .content {
+            white-space: pre-wrap;
+            line-height: 1.5;
+          }
+          .content p {
+            margin-bottom: 0.3em;
+            margin-top: 0;
+          }
+          .content br {
+            display: block;
+            margin: 0.05em 0;
+            content: "";
+          }
+          .footer-bar {
+            background: linear-gradient(135deg, #4a5578 0%, #2d3561 100%);
+            height: 15px;
+            margin-top: 40px;
+          }
+          strong { font-weight: 600; }
+          em { font-style: italic; }
+          u { text-decoration: underline; }
+        `,
+        render: (content: string) => {
+          // Extract contact info from content
+          const lines = content.split('\n').filter(line => line.trim());
+          
+          // Find name, email, and phone
+          let name = 'Your Name';
+          let email = '';
+          let phone = '';
+          
+          // Find and extract name, email, and phone
+          let contentStartIndex = 0;
+          
+          for (let i = 0; i < Math.min(lines.length, 10); i++) {
+            const line = lines[i].trim();
+            
+            // Check for name (first non-empty line)
+            if (i === 0 && line) {
+              name = line;
+              contentStartIndex = 1;
+            }
+            
+            // Check for email
+            if (line.includes('@') && line.includes('.')) {
+              email = line;
+              contentStartIndex = Math.max(contentStartIndex, i + 1);
+            }
+            
+            // Check for phone number
+            if (/[\d\(\)\-\s]{10,}/.test(line) && /\d{3}/.test(line)) {
+              phone = line;
+              contentStartIndex = Math.max(contentStartIndex, i + 1);
+            }
+          }
+          
+          // Get the actual letter content (skip header info)
+          const letterContent = lines.slice(contentStartIndex).join('\n\n');
+          
+          return `
+          <div class="cover-letter">
+            <div class="header-bar">
+              <div class="header-content">
+                <div class="name-section">
+                  <div class="name">${name}</div>
+                  ${email ? `<div class="title">${email}</div>` : ''}
+                  ${phone ? `<div class="title">${phone}</div>` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="content-area">
+              <div class="content">${convertMarkdownToHtml(letterContent)}</div>
+            </div>
+            <div class="footer-bar"></div>
+          </div>
+          `;
+        }
+      }
+    };
+    
+    return templates[templateName as keyof typeof templates] || templates.professional;
   };
 
 
@@ -369,10 +724,148 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
             <h3 style={styles.formTitle}>Your Cover Letter</h3>
             <p style={styles.formSubtitle}>
-              Review and edit your cover letter as needed
+              Review, edit, and choose a template for your cover letter
             </p>
           </div>
 
+          {/* Template Selection */}
+          <div style={styles.templateSection}>
+            <h4 style={styles.templateSectionTitle}>Choose a Template Style</h4>
+            <div style={styles.templateGrid}>
+              <div 
+                style={{
+                  ...styles.templateCard,
+                  ...(selectedTemplate === 'professional' ? styles.templateCardActive : {})
+                }}
+                onClick={() => setSelectedTemplate('professional')}
+              >
+                <div style={styles.templateIcon}>📋</div>
+                <div style={styles.templateName}>Professional</div>
+                <div style={styles.templateDescription}>Classic serif font, formal layout</div>
+              </div>
+              
+              <div 
+                style={{
+                  ...styles.templateCard,
+                  ...(selectedTemplate === 'modern' ? styles.templateCardActive : {})
+                }}
+                onClick={() => setSelectedTemplate('modern')}
+              >
+                <div style={styles.templateIcon}>✨</div>
+                <div style={styles.templateName}>Modern</div>
+                <div style={styles.templateDescription}>Clean sans-serif, accent bar</div>
+              </div>
+              
+              <div 
+                style={{
+                  ...styles.templateCard,
+                  ...(selectedTemplate === 'creative' ? styles.templateCardActive : {})
+                }}
+                onClick={() => setSelectedTemplate('creative')}
+              >
+                <div style={styles.templateIcon}>🎨</div>
+                <div style={styles.templateName}>Creative</div>
+                <div style={styles.templateDescription}>Elegant with decorative borders</div>
+              </div>
+              
+              <div 
+                style={{
+                  ...styles.templateCard,
+                  ...(selectedTemplate === 'header' ? styles.templateCardActive : {})
+                }}
+                onClick={() => setSelectedTemplate('header')}
+              >
+                <div style={styles.templateIcon}>📰</div>
+                <div style={styles.templateName}>Header Style</div>
+                <div style={styles.templateDescription}>Professional with header bar</div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setShowTemplatePreview(true)} 
+              style={styles.previewButton}
+            >
+              👁️ Preview Template
+            </button>
+          </div>
+
+          {/* Formatting Options */}
+          <div style={styles.formattingSection}>
+            <h4 style={styles.templateSectionTitle}>Formatting Options</h4>
+            
+            <div style={styles.formattingGrid}>
+              <div style={styles.formattingGroup}>
+                <label style={styles.formattingLabel}>Font Family</label>
+                <select 
+                  value={fontFamily} 
+                  onChange={(e) => setFontFamily(e.target.value as any)}
+                  style={styles.formattingSelect}
+                >
+                  <option value="Arial">Arial</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Garamond">Garamond</option>
+                  <option value="Trebuchet MS">Trebuchet MS</option>
+                </select>
+              </div>
+              
+              <div style={styles.formattingGroup}>
+                <label style={styles.formattingLabel}>Font Size</label>
+                <select 
+                  value={fontSize} 
+                  onChange={(e) => setFontSize(e.target.value as any)}
+                  style={styles.formattingSelect}
+                >
+                  <option value="small">Small (11pt)</option>
+                  <option value="medium">Medium (12pt)</option>
+                  <option value="large">Large (13pt)</option>
+                </select>
+              </div>
+              
+              <div style={styles.formattingGroup}>
+                <label style={styles.formattingLabel}>Text Alignment</label>
+                <select 
+                  value={textAlign} 
+                  onChange={(e) => setTextAlign(e.target.value as any)}
+                  style={styles.formattingSelect}
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="justify">Justify</option>
+                </select>
+              </div>
+            </div>
+            
+            <div style={styles.textFormattingToolbar}>
+              <div style={styles.toolbarLabel}>Text Formatting (select text first):</div>
+              <div style={styles.toolbarButtons}>
+                <button 
+                  onClick={() => applyFormatting('bold')} 
+                  style={styles.toolbarButton}
+                  title="Make selected text bold"
+                >
+                  <strong>B</strong>
+                </button>
+                <button 
+                  onClick={() => applyFormatting('italic')} 
+                  style={styles.toolbarButton}
+                  title="Make selected text italic"
+                >
+                  <em>I</em>
+                </button>
+                <button 
+                  onClick={() => applyFormatting('underline')} 
+                  style={styles.toolbarButton}
+                  title="Underline selected text"
+                >
+                  <u>U</u>
+                </button>
+              </div>
+              <div style={styles.toolbarHint}>
+                💡 Select text in the editor below and click formatting buttons
+              </div>
+            </div>
+          </div>
 
           <div style={styles.editorSection}>
             <textarea
@@ -383,16 +876,15 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             />
           </div>
 
-
           <div style={styles.editorActions}>
             <button onClick={handleCopyToClipboard} style={styles.actionButton}>
               📋 Copy to Clipboard
             </button>
             <button onClick={handleDownload} style={styles.actionButton}>
-              � Download as TXT
+              📄 Download as TXT
             </button>
             <button onClick={handleDownloadPDF} style={styles.actionButton}>
-              📕 Download as PDF
+              📕 Download as PDF ({selectedTemplate})
             </button>
             <button 
               onClick={() => {
@@ -405,6 +897,62 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             >
               ✏️ Create Another
             </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Template Preview Modal */}
+      {showTemplatePreview && (
+        <div style={styles.modalOverlay} onClick={() => setShowTemplatePreview(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Template Preview - {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)}</h3>
+              <button 
+                onClick={() => setShowTemplatePreview(false)} 
+                style={styles.modalCloseButton}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={styles.modalBody}>
+              <div style={styles.previewFrame}>
+                <iframe
+                  srcDoc={`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <title>Cover Letter Preview</title>
+                      <style>
+                        ${getTemplateStyles(selectedTemplate, fontFamily, fontSize, textAlign).styles}
+                      </style>
+                    </head>
+                    <body>
+                      ${getTemplateStyles(selectedTemplate, fontFamily, fontSize, textAlign).render(editedCoverLetter)}
+                    </body>
+                    </html>
+                  `}
+                  style={styles.previewIframe}
+                  title="Template Preview"
+                />
+              </div>
+            </div>
+            <div style={styles.modalFooter}>
+              <button 
+                onClick={() => setShowTemplatePreview(false)} 
+                style={styles.modalActionButton}
+              >
+                Close Preview
+              </button>
+              <button 
+                onClick={() => {
+                  setShowTemplatePreview(false);
+                  handleDownloadPDF();
+                }} 
+                style={styles.modalPrimaryButton}
+              >
+                Download This Template
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -711,6 +1259,234 @@ const styles: { [key: string]: React.CSSProperties } = {
    fontSize: '15px',
    cursor: 'pointer',
    transition: 'all 0.2s',
+ },
+ // Template section
+ templateSection: {
+   marginBottom: '24px',
+   padding: '24px',
+   backgroundColor: '#f8fafc',
+   borderRadius: '12px',
+   border: '1px solid #e2e8f0',
+ },
+ templateSectionTitle: {
+   fontSize: '18px',
+   fontWeight: '600',
+   color: '#2d3748',
+   marginBottom: '16px',
+   marginTop: 0,
+ },
+ templateGrid: {
+   display: 'grid',
+   gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+   gap: '12px',
+   marginBottom: '16px',
+ },
+ templateCard: {
+   padding: '16px',
+   backgroundColor: 'white',
+   border: '2px solid #e2e8f0',
+   borderRadius: '10px',
+   textAlign: 'center',
+   cursor: 'pointer',
+   transition: 'all 0.3s',
+ },
+ templateCardActive: {
+   borderColor: '#667eea',
+   backgroundColor: '#f0f4ff',
+   boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)',
+ },
+ templateIcon: {
+   fontSize: '32px',
+   marginBottom: '8px',
+ },
+ templateName: {
+   fontWeight: '600',
+   fontSize: '15px',
+   color: '#2d3748',
+   marginBottom: '4px',
+ },
+ templateDescription: {
+   fontSize: '12px',
+   color: '#718096',
+   lineHeight: '1.4',
+ },
+ previewButton: {
+   width: '100%',
+   padding: '12px 24px',
+   backgroundColor: 'white',
+   color: '#667eea',
+   border: '2px solid #667eea',
+   borderRadius: '8px',
+   fontWeight: '600',
+   fontSize: '15px',
+   cursor: 'pointer',
+   transition: 'all 0.2s',
+ },
+ // Formatting section
+ formattingSection: {
+   marginBottom: '24px',
+   padding: '24px',
+   backgroundColor: '#f8fafc',
+   borderRadius: '12px',
+   border: '1px solid #e2e8f0',
+ },
+ formattingGrid: {
+   display: 'grid',
+   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+   gap: '16px',
+   marginBottom: '20px',
+ },
+ formattingGroup: {
+   display: 'flex',
+   flexDirection: 'column',
+ },
+ formattingLabel: {
+   fontSize: '14px',
+   fontWeight: '600',
+   color: '#4a5568',
+   marginBottom: '8px',
+ },
+ formattingSelect: {
+   padding: '10px 12px',
+   fontSize: '14px',
+   border: '2px solid #e2e8f0',
+   borderRadius: '8px',
+   backgroundColor: 'white',
+   color: '#2d3748',
+   cursor: 'pointer',
+   outline: 'none',
+   transition: 'border-color 0.2s',
+ },
+ textFormattingToolbar: {
+   padding: '16px',
+   backgroundColor: 'white',
+   borderRadius: '8px',
+   border: '2px solid #e2e8f0',
+ },
+ toolbarLabel: {
+   fontSize: '14px',
+   fontWeight: '600',
+   color: '#4a5568',
+   marginBottom: '12px',
+ },
+ toolbarButtons: {
+   display: 'flex',
+   gap: '8px',
+   marginBottom: '12px',
+ },
+ toolbarButton: {
+   width: '44px',
+   height: '44px',
+   backgroundColor: 'white',
+   border: '2px solid #667eea',
+   borderRadius: '8px',
+   fontSize: '16px',
+   fontWeight: '600',
+   color: '#667eea',
+   cursor: 'pointer',
+   transition: 'all 0.2s',
+   display: 'flex',
+   alignItems: 'center',
+   justifyContent: 'center',
+ },
+ toolbarHint: {
+   fontSize: '12px',
+   color: '#718096',
+   fontStyle: 'italic',
+ },
+ // Modal styles
+ modalOverlay: {
+   position: 'fixed',
+   top: 0,
+   left: 0,
+   right: 0,
+   bottom: 0,
+   backgroundColor: 'rgba(0, 0, 0, 0.7)',
+   display: 'flex',
+   alignItems: 'center',
+   justifyContent: 'center',
+   zIndex: 1000,
+ },
+ modalContent: {
+   backgroundColor: 'white',
+   borderRadius: '16px',
+   width: '90%',
+   maxWidth: '900px',
+   maxHeight: '90vh',
+   display: 'flex',
+   flexDirection: 'column',
+   boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+ },
+ modalHeader: {
+   padding: '24px 32px',
+   borderBottom: '1px solid #e2e8f0',
+   display: 'flex',
+   justifyContent: 'space-between',
+   alignItems: 'center',
+ },
+ modalTitle: {
+   fontSize: '22px',
+   fontWeight: '600',
+   color: '#2d3748',
+   margin: 0,
+ },
+ modalCloseButton: {
+   backgroundColor: 'transparent',
+   border: 'none',
+   fontSize: '24px',
+   color: '#718096',
+   cursor: 'pointer',
+   padding: '4px 8px',
+   lineHeight: 1,
+ },
+ modalBody: {
+   padding: '32px',
+   flex: 1,
+   overflow: 'auto',
+ },
+ previewFrame: {
+   width: '100%',
+   height: '600px',
+   border: '1px solid #e2e8f0',
+   borderRadius: '8px',
+   overflow: 'hidden',
+   backgroundColor: 'white',
+   boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.05)',
+ },
+ previewIframe: {
+   width: '100%',
+   height: '100%',
+   border: 'none',
+ },
+ modalFooter: {
+   padding: '20px 32px',
+   borderTop: '1px solid #e2e8f0',
+   display: 'flex',
+   gap: '12px',
+   justifyContent: 'flex-end',
+ },
+ modalActionButton: {
+   padding: '12px 24px',
+   backgroundColor: 'white',
+   color: '#667eea',
+   border: '2px solid #667eea',
+   borderRadius: '8px',
+   fontWeight: '600',
+   fontSize: '15px',
+   cursor: 'pointer',
+   transition: 'all 0.2s',
+ },
+ modalPrimaryButton: {
+   padding: '12px 24px',
+   backgroundColor: '#667eea',
+   color: 'white',
+   border: 'none',
+   borderRadius: '8px',
+   fontWeight: '600',
+   fontSize: '15px',
+   cursor: 'pointer',
+   transition: 'all 0.2s',
+   boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
  },
 };
 
