@@ -30,6 +30,36 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [fontFamily, setFontFamily] = useState<'Arial' | 'Times New Roman' | 'Georgia' | 'Garamond' | 'Trebuchet MS'>('Arial');
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [textAlign, setTextAlign] = useState<'left' | 'center' | 'justify'>('left');
+  const [showFormattingWarning, setShowFormattingWarning] = useState(false);
+
+  // Keyboard shortcuts for formatting
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if Ctrl (Windows/Linux) or Cmd (Mac) is pressed
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'b' || e.key === 'B') {
+          e.preventDefault();
+          applyFormatting('bold');
+        } else if (e.key === 'i' || e.key === 'I') {
+          e.preventDefault();
+          applyFormatting('italic');
+        } else if (e.key === 'u' || e.key === 'U') {
+          e.preventDefault();
+          applyFormatting('underline');
+        }
+      }
+    };
+
+    // Add event listener when in editor step
+    if (currentStep === 'editor') {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentStep, editedCoverLetter]); // Re-attach when step or content changes
 
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,7 +171,9 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const selectedText = editedCoverLetter.substring(start, end);
     
     if (!selectedText) {
-      alert('Please select text to format');
+      // Highlight the warning text instead of showing alert
+      setShowFormattingWarning(true);
+      setTimeout(() => setShowFormattingWarning(false), 3000);
       return;
     }
     
@@ -402,6 +434,12 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             font-weight: 400;
             line-height: 1.4;
           }
+          .title strong { font-weight: 700; }
+          .title em { font-style: italic; }
+          .title u { text-decoration: underline; }
+          .name strong { font-weight: 900; }
+          .name em { font-style: italic; }
+          .name u { text-decoration: underline; }
           .contact-info {
             text-align: right;
             font-size: 9pt;
@@ -427,7 +465,7 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             line-height: 1.5;
           }
           .content p {
-            margin-bottom: 0.3em;
+            margin-bottom: 0.15em;
             margin-top: 0;
           }
           .content br {
@@ -435,18 +473,26 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             margin: 0.05em 0;
             content: "";
           }
+          .content strong { font-weight: 600; }
+          .content em { font-style: italic; }
+          .content u { text-decoration: underline; }
           .footer-bar {
             background: linear-gradient(135deg, #4a5578 0%, #2d3561 100%);
             height: 15px;
             margin-top: 40px;
           }
-          strong { font-weight: 600; }
-          em { font-style: italic; }
-          u { text-decoration: underline; }
         `,
         render: (content: string) => {
           // Extract contact info from content
           const lines = content.split('\n').filter(line => line.trim());
+          
+          // Helper function to convert markdown formatting to HTML
+          const convertMarkdownInline = (text: string): string => {
+            return text
+              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold
+              .replace(/\*(.*?)\*/g, '<em>$1</em>')              // Italic
+              .replace(/__(.*?)__/g, '<u>$1</u>');               // Underline
+          };
           
           // Find name, email, and phone
           let name = 'Your Name';
@@ -461,19 +507,19 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             
             // Check for name (first non-empty line)
             if (i === 0 && line) {
-              name = line;
+              name = convertMarkdownInline(line);
               contentStartIndex = 1;
             }
             
             // Check for email
             if (line.includes('@') && line.includes('.')) {
-              email = line;
+              email = convertMarkdownInline(line);
               contentStartIndex = Math.max(contentStartIndex, i + 1);
             }
             
             // Check for phone number
             if (/[\d\(\)\-\s]{10,}/.test(line) && /\d{3}/.test(line)) {
-              phone = line;
+              phone = convertMarkdownInline(line);
               contentStartIndex = Math.max(contentStartIndex, i + 1);
             }
           }
@@ -780,13 +826,6 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div style={styles.templateDescription}>Professional with header bar</div>
               </div>
             </div>
-            
-            <button 
-              onClick={() => setShowTemplatePreview(true)} 
-              style={styles.previewButton}
-            >
-              👁️ Preview Template
-            </button>
           </div>
 
           {/* Formatting Options */}
@@ -861,10 +900,23 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <u>U</u>
                 </button>
               </div>
-              <div style={styles.toolbarHint}>
+              <div style={{
+                ...styles.toolbarHint,
+                ...(showFormattingWarning ? styles.toolbarHintWarning : {})
+              }}>
                 💡 Select text in the editor below and click formatting buttons
               </div>
             </div>
+          </div>
+
+          {/* Preview Section */}
+          <div style={styles.previewSection}>
+            <button 
+              onClick={() => setShowTemplatePreview(true)} 
+              style={styles.previewButton}
+            >
+              👁️ Preview Template
+            </button>
           </div>
 
           <div style={styles.editorSection}>
@@ -1312,15 +1364,17 @@ const styles: { [key: string]: React.CSSProperties } = {
  },
  previewButton: {
    width: '100%',
-   padding: '12px 24px',
+   maxWidth: '400px',
+   padding: '14px 24px',
    backgroundColor: 'white',
    color: '#667eea',
    border: '2px solid #667eea',
    borderRadius: '8px',
    fontWeight: '600',
-   fontSize: '15px',
+   fontSize: '16px',
    cursor: 'pointer',
    transition: 'all 0.2s',
+   boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
  },
  // Formatting section
  formattingSection: {
@@ -1329,6 +1383,15 @@ const styles: { [key: string]: React.CSSProperties } = {
    backgroundColor: '#f8fafc',
    borderRadius: '12px',
    border: '1px solid #e2e8f0',
+ },
+ // Preview section
+ previewSection: {
+   marginBottom: '24px',
+   padding: '20px',
+   backgroundColor: '#f8fafc',
+   borderRadius: '12px',
+   border: '1px solid #e2e8f0',
+   textAlign: 'center',
  },
  formattingGrid: {
    display: 'grid',
@@ -1393,6 +1456,13 @@ const styles: { [key: string]: React.CSSProperties } = {
    fontSize: '12px',
    color: '#718096',
    fontStyle: 'italic',
+   transition: 'all 0.3s ease',
+ },
+ toolbarHintWarning: {
+   color: '#e53e3e',
+   fontWeight: '600',
+   fontStyle: 'normal',
+   animation: 'pulse 0.5s ease-in-out',
  },
  // Modal styles
  modalOverlay: {
