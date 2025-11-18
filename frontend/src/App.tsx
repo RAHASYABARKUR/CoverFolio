@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import TemplateGallery from "./pages/TemplateGallery";
 import Editor from "./pages/Editor";
+import AIChatbot from './components/AIChatbot';
 
 const App: React.FC = () => {
  return (
@@ -34,6 +35,9 @@ const App: React.FC = () => {
          {/* Catch all - redirect to home */}
          <Route path="*" element={<Navigate to="/" replace />} />
        </Routes>
+       
+       {/* AI Chatbot - Available on all pages */}
+       <AIChatbot />
      </AuthProvider>
    </Router>
  );
