@@ -331,3 +331,49 @@ def generate_cover_letter(request):
         return Response({
             'error': f'Failed to generate cover letter: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def chat_with_ai_assistant(request):
+    """
+    Chat with AI assistant for help with resumes, cover letters, and portfolios.
+    
+    POST /api/resume/chat/
+    Body: {
+        "message": "Help me improve this section",
+        "context": "Optional context (resume data, cover letter content, etc.)",
+        "conversation_history": [
+            {"role": "user", "content": "Previous message"},
+            {"role": "assistant", "content": "Previous response"}
+        ]
+    }
+    """
+    from .chatbot import chat_with_ai, chat_with_conversation_history
+    
+    message = request.data.get('message')
+    context = request.data.get('context', None)
+    conversation_history = request.data.get('conversation_history', None)
+    
+    if not message:
+        return Response({
+            'error': 'Message is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        if conversation_history:
+            # Add current message to history
+            conversation_history.append({'role': 'user', 'content': message})
+            response_text = chat_with_conversation_history(conversation_history)
+        else:
+            response_text = chat_with_ai(message, context)
+        
+        return Response({
+            'response': response_text,
+            'message': message
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': f'Failed to get AI response: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
