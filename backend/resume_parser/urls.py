@@ -7,4 +7,5 @@ urlpatterns = [
     path('<int:resume_id>/', views.get_resume, name='get_resume'),
     path('<int:resume_id>/delete/', views.delete_resume, name='delete_resume'),
     path('generate-cover-letter/', views.generate_cover_letter, name='generate_cover_letter'),
+    path('chat/', views.chat_with_ai_assistant, name='chat_with_ai'),
 ]
