@@ -5,6 +5,7 @@ import PortfolioMaker from '../components/PortfolioMaker';
 import CoverLetterMaker from '../components/CoverLetterMaker';
 import PortfolioManager from '../components/PortfolioManager';
 import PortfolioEditor from '../components/PortfolioEditor';
+import Profile from '../components/Profile';
 
 
 const Dashboard: React.FC = () => {
@@ -21,6 +22,7 @@ const Dashboard: React.FC = () => {
 
  // Determine current view based on URL
  const getCurrentView = () => {
+   if (location.pathname === '/dashboard/profile') return 'profile';
    if (location.pathname === '/dashboard/portfolio') return 'portfolio';
    if (location.pathname === '/dashboard/resumes') return 'resumes';
    if (location.pathname.startsWith('/dashboard/portfolio/preview/')) return 'preview';
@@ -84,69 +86,95 @@ const Dashboard: React.FC = () => {
    </div>
 
 
-     <h2 style={styles.sectionTitle}>What would you like to create today?</h2>
+    <h2 style={styles.sectionTitle}>What would you like to create today?</h2>
 
 
-     <div style={styles.optionsGrid}>
-       {/* Portfolio Maker Option */}
-       <div
-         style={styles.optionCard}
-         onClick={() => navigate('/dashboard/portfolio')}
-         onMouseEnter={(e) => {
-           e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-           e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
-         }}
-         onMouseLeave={(e) => {
-           e.currentTarget.style.transform = 'translateY(0) scale(1)';
-           e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
-         }}
-       >
-         <div style={styles.decorativeCircle1}></div>
-         <div style={styles.decorativeCircle2}></div>
-         <div style={styles.optionIcon}>📁</div>
-         <h2 style={styles.optionTitle}>Portfolio Maker</h2>
-         <p style={styles.optionDescription}>
-           Create a stunning portfolio website from your resume. Stand out with a professional online presence.
-         </p>
-         <div style={styles.featureList}>
-           <div style={styles.featureItem}>✓ Upload your resume</div>
-           <div style={styles.featureItem}>✓ Choose templates</div>
-           <div style={styles.featureItem}>✓ Publish instantly</div>
-         </div>
-         <div style={styles.optionButton}>Get Started →</div>
-       </div>
+    <div style={styles.optionsGrid}>
+      {/* Profile Option - NEW */}
+      <div
+        style={{...styles.optionCard, backgroundColor: '#f0f4ff'}}
+        onClick={() => navigate('/dashboard/profile')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
+        }}
+      >
+        <div style={styles.decorativeCircle1}></div>
+        <div style={styles.decorativeCircle2}></div>
+        <div style={styles.optionIcon}>👤</div>
+        <h2 style={styles.optionTitle}>My Profile</h2>
+        <p style={styles.optionDescription}>
+          Manage your professional information. Upload and maintain your resume data in one place.
+        </p>
+        <div style={styles.featureList}>
+          <div style={styles.featureItem}>✓ Upload resume once</div>
+          <div style={styles.featureItem}>✓ Edit profile forms</div>
+          <div style={styles.featureItem}>✓ Keep data updated</div>
+        </div>
+        <div style={styles.optionButton}>Manage Profile →</div>
+      </div>
+
+      {/* Portfolio Maker Option */}
+      <div
+        style={styles.optionCard}
+        onClick={() => navigate('/dashboard/portfolio')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
+        }}
+      >
+        <div style={styles.decorativeCircle1}></div>
+        <div style={styles.decorativeCircle2}></div>
+        <div style={styles.optionIcon}>📁</div>
+        <h2 style={styles.optionTitle}>Portfolio Maker</h2>
+        <p style={styles.optionDescription}>
+          Create a stunning portfolio website from your resume. Stand out with a professional online presence.
+        </p>
+        <div style={styles.featureList}>
+          <div style={styles.featureItem}>✓ Use profile data</div>
+          <div style={styles.featureItem}>✓ Choose templates</div>
+          <div style={styles.featureItem}>✓ Publish instantly</div>
+        </div>
+        <div style={styles.optionButton}>Get Started →</div>
+      </div>
 
 
-       {/* Cover Letter Maker Option */}
-       <div
-         style={styles.optionCard}
-         onClick={() => navigate('/dashboard/coverletter')}
-         onMouseEnter={(e) => {
-           e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-           e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
-         }}
-         onMouseLeave={(e) => {
-           e.currentTarget.style.transform = 'translateY(0) scale(1)';
-           e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
-         }}
-       >
-         <div style={styles.decorativeCircle1}></div>
-         <div style={styles.decorativeCircle2}></div>
-         <div style={styles.optionIcon}>✉️</div>
-         <h2 style={styles.optionTitle}>Cover Letter Maker</h2>
-         <p style={styles.optionDescription}>
-           Generate professional cover letters tailored to any job. Make every application count.
-         </p>
-         <div style={styles.featureList}>
-           <div style={styles.featureItem}>✓ AI-powered writing</div>
-           <div style={styles.featureItem}>✓ Job-specific content</div>
-           <div style={styles.featureItem}>✓ Multiple formats</div>
-         </div>
-         <div style={styles.optionButton}>Get Started →</div>
-       </div>
-     </div>
-
-
+      {/* Cover Letter Maker Option */}
+      <div
+        style={styles.optionCard}
+        onClick={() => navigate('/dashboard/coverletter')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
+        }}
+      >
+        <div style={styles.decorativeCircle1}></div>
+        <div style={styles.decorativeCircle2}></div>
+        <div style={styles.optionIcon}>✉️</div>
+        <h2 style={styles.optionTitle}>Cover Letter Maker</h2>
+        <p style={styles.optionDescription}>
+          Generate professional cover letters tailored to any job. Make every application count.
+        </p>
+        <div style={styles.featureList}>
+          <div style={styles.featureItem}>✓ AI-powered writing</div>
+          <div style={styles.featureItem}>✓ Job-specific content</div>
+          <div style={styles.featureItem}>✓ Multiple formats</div>
+        </div>
+        <div style={styles.optionButton}>Get Started →</div>
+      </div>
+    </div>
    </div>
  );
 
@@ -249,17 +277,18 @@ const Dashboard: React.FC = () => {
            </button>
          </div>
        </div>
-     </nav>
+    </nav>
 
 
-     <main style={styles.main}>
-       {currentView === 'home' && renderHomeView()}
-       {currentView === 'portfolio' && <PortfolioMaker onBack={() => navigate('/dashboard')} />}
-       {currentView === 'resumes' && <PortfolioManager onBack={() => navigate('/dashboard')} />}
-       {currentView === 'preview' && <PortfolioEditor />}
-       {currentView === 'coverletter' && <CoverLetterMaker onBack={() => navigate('/dashboard')} />}
-     </main>
-   </div>
+    <main style={styles.main}>
+      {currentView === 'home' && renderHomeView()}
+      {currentView === 'profile' && <Profile onBack={() => navigate('/dashboard')} />}
+      {currentView === 'portfolio' && <PortfolioMaker onBack={() => navigate('/dashboard')} />}
+      {currentView === 'resumes' && <PortfolioManager onBack={() => navigate('/dashboard')} />}
+      {currentView === 'preview' && <PortfolioEditor />}
+      {currentView === 'coverletter' && <CoverLetterMaker onBack={() => navigate('/dashboard')} />}
+    </main>
+  </div>
  );
 };
 
@@ -603,8 +632,8 @@ const styles: { [key: string]: React.CSSProperties } = {
  },
  optionsGrid: {
    display: 'grid',
-   gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-   gap: '32px',
+   gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+   gap: '24px',
    marginBottom: '50px',
  },
  optionCard: {
