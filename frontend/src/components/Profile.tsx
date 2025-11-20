@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import resumeService, { Resume } from '../services/resume.service';
-import portfolioService from '../services/portfolio.service';
-import { Portfolio } from '../types/portfolio.types';
 
 const Profile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const navigate = useNavigate();
@@ -10,7 +8,6 @@ const Profile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileResume, setProfileResume] = useState<Resume | null>(null);
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -29,10 +26,6 @@ const Profile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (resumes.length > 0) {
         const latestResume = resumes[resumes.length - 1];
         setProfileResume(latestResume);
-        
-        // Fetch portfolio data
-        const portfolioData = await portfolioService.getPortfolio();
-        setPortfolio(portfolioData);
       }
     } catch (err: any) {
       console.error('Error loading profile:', err);
@@ -78,9 +71,8 @@ const Profile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleViewPortfolioEditor = () => {
-    if (profileResume) {
-      navigate(`/dashboard/portfolio/preview/${profileResume.id}`);
-    }
+    // Navigate to Profile Forms Editor instead of Portfolio Editor
+    navigate('/dashboard/profile/edit');
   };
 
   return (
@@ -248,46 +240,6 @@ const Profile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             )}
           </div>
 
-          {/* Portfolio Summary Section */}
-          {portfolio && (
-            <div style={styles.card}>
-              <div style={styles.cardHeader}>
-                <h2 style={styles.cardTitle}>
-                  <span style={styles.cardIcon}>💼</span>
-                  Portfolio Summary
-                </h2>
-              </div>
-              
-              <div style={styles.portfolioSummary}>
-                <div style={styles.summaryGrid}>
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryValue}>{portfolio.projects_count || 0}</div>
-                    <div style={styles.summaryLabel}>Projects</div>
-                  </div>
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryValue}>{portfolio.skills_count || 0}</div>
-                    <div style={styles.summaryLabel}>Skills</div>
-                  </div>
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryValue}>{portfolio.experiences_count || 0}</div>
-                    <div style={styles.summaryLabel}>Experience</div>
-                  </div>
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryValue}>{portfolio.education_count || 0}</div>
-                    <div style={styles.summaryLabel}>Education</div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleViewPortfolioEditor}
-                  style={styles.secondaryButton}
-                >
-                  Edit Portfolio Details
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Info Card */}
           <div style={styles.infoCard}>
             <div style={styles.infoIcon}>💡</div>
@@ -316,30 +268,36 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   backButton: {
-    background: 'none',
-    border: 'none',
+    background: 'white',
+    border: '2px solid #667eea',
     color: '#667eea',
     fontSize: '16px',
+    fontWeight: '600',
     cursor: 'pointer',
-    marginBottom: '20px',
-    padding: '8px 0',
+    marginBottom: '24px',
+    padding: '10px 20px',
+    borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
+    transition: 'all 0.2s ease',
   },
   header: {
     marginBottom: '32px',
+    textAlign: 'center' as 'center',
   },
   title: {
-    fontSize: '32px',
+    fontSize: '36px',
     fontWeight: 'bold',
-    color: '#1a202c',
-    marginBottom: '8px',
+    color: 'white',
+    marginBottom: '12px',
   },
   subtitle: {
-    fontSize: '16px',
-    color: '#718096',
+    fontSize: '18px',
+    color: 'rgba(255, 255, 255, 0.95)',
     lineHeight: '1.6',
+    maxWidth: '700px',
+    margin: '0 auto',
   },
   errorBanner: {
     backgroundColor: '#fed7d7',
@@ -589,32 +547,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'pointer',
     transition: 'all 0.2s',
     boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-  },
-  portfolioSummary: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  summaryGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-    gap: '16px',
-  },
-  summaryItem: {
-    textAlign: 'center',
-    padding: '16px',
-    backgroundColor: '#f7fafc',
-    borderRadius: '12px',
-  },
-  summaryValue: {
-    fontSize: '32px',
-    fontWeight: 'bold',
-    color: '#667eea',
-    marginBottom: '4px',
-  },
-  summaryLabel: {
-    fontSize: '14px',
-    color: '#718096',
   },
   infoCard: {
     backgroundColor: '#ebf4ff',
