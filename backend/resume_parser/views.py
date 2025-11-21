@@ -44,7 +44,10 @@ def upload_resume(request):
         print(full_file_path)
         try:
             #structured_data = parse_resume_llama(full_file_path)
-            structured_data = parse_resume_gemini(full_file_path,api_key ="AIzaSyAZLyAlpUdTr5fKBfRZ9nRDWP6AoHRRsNY")
+            api_key = os.getenv('GEMINI_API_KEY')
+            if not api_key:
+                raise ValueError("GEMINI_API_KEY not found in environment variables")
+            structured_data = parse_resume_gemini(full_file_path,api_key =api_key)
             print(structured_data)
             extracted_text = extract_text_from_pdf(full_file_path)
         except Exception as e:
@@ -309,7 +312,11 @@ def generate_cover_letter(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Generate cover letter
-        api_key = "AIzaSyAZLyAlpUdTr5fKBfRZ9nRDWP6AoHRRsNY"
+        #api_key = "AIzaSyAZLyAlpUdTr5fKBfRZ9nRDWP6AoHRRsNY"
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY not found in environment variables")
+
         cover_letter = generate_cover_letter_gemini(
             resume_data=resume.structured_data,
             job_description=job_description,

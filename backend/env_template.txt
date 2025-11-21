@@ -28,3 +28,6 @@ AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_STORAGE_BUCKET_NAME=your_bucket_name
 AWS_S3_REGION_NAME=us-east-1  # Change to your preferred AWS region
 AWS_S3_CUSTOM_DOMAIN=your_bucket_name.s3.amazonaws.com
+
+# Gemini API Key
+GEMINI_API_KEY=AIzaSyAZLyAlpUdTr5fKBfRZ9nRDWP6AoHRRsNY
