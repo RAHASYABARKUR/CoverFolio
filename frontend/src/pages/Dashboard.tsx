@@ -5,6 +5,8 @@ import PortfolioMaker from '../components/PortfolioMaker';
 import CoverLetterMaker from '../components/CoverLetterMaker';
 import PortfolioManager from '../components/PortfolioManager';
 import PortfolioEditor from '../components/PortfolioEditor';
+import ProfileFormsEditor from '../components/ProfileFormsEditor';
+import Profile from '../components/Profile';
 
 
 const Dashboard: React.FC = () => {
@@ -21,6 +23,8 @@ const Dashboard: React.FC = () => {
 
  // Determine current view based on URL
  const getCurrentView = () => {
+   if (location.pathname === '/dashboard/profile/edit') return 'profile-edit';
+   if (location.pathname === '/dashboard/profile') return 'profile';
    if (location.pathname === '/dashboard/portfolio') return 'portfolio';
    if (location.pathname === '/dashboard/resumes') return 'resumes';
    if (location.pathname.startsWith('/dashboard/portfolio/preview/')) return 'preview';
@@ -84,69 +88,67 @@ const Dashboard: React.FC = () => {
    </div>
 
 
-     <h2 style={styles.sectionTitle}>What would you like to create today?</h2>
+    <h2 style={styles.sectionTitle}>What would you like to create today?</h2>
 
 
-     <div style={styles.optionsGrid}>
-       {/* Portfolio Maker Option */}
-       <div
-         style={styles.optionCard}
-         onClick={() => navigate('/dashboard/portfolio')}
-         onMouseEnter={(e) => {
-           e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-           e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
-         }}
-         onMouseLeave={(e) => {
-           e.currentTarget.style.transform = 'translateY(0) scale(1)';
-           e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
-         }}
-       >
-         <div style={styles.decorativeCircle1}></div>
-         <div style={styles.decorativeCircle2}></div>
-         <div style={styles.optionIcon}>📁</div>
-         <h2 style={styles.optionTitle}>Portfolio Maker</h2>
-         <p style={styles.optionDescription}>
-           Create a stunning portfolio website from your resume. Stand out with a professional online presence.
-         </p>
-         <div style={styles.featureList}>
-           <div style={styles.featureItem}>✓ Upload your resume</div>
-           <div style={styles.featureItem}>✓ Choose templates</div>
-           <div style={styles.featureItem}>✓ Publish instantly</div>
-         </div>
-         <div style={styles.optionButton}>Get Started →</div>
-       </div>
+    <div style={styles.optionsGrid}>
+      {/* Portfolio Maker Option */}
+      <div
+        style={styles.optionCard}
+        onClick={() => navigate('/dashboard/portfolio')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
+        }}
+      >
+        <div style={styles.decorativeCircle1}></div>
+        <div style={styles.decorativeCircle2}></div>
+        <div style={styles.optionIcon}>📁</div>
+        <h2 style={styles.optionTitle}>Portfolio Maker</h2>
+        <p style={styles.optionDescription}>
+          Create a stunning portfolio website from your profile data. Stand out with a professional online presence.
+        </p>
+        <div style={styles.featureList}>
+          <div style={styles.featureItem}>✓ Use profile data</div>
+          <div style={styles.featureItem}>✓ Choose templates</div>
+          <div style={styles.featureItem}>✓ Publish instantly</div>
+        </div>
+        <div style={styles.optionButton}>Get Started →</div>
+      </div>
 
 
-       {/* Cover Letter Maker Option */}
-       <div
-         style={styles.optionCard}
-         onClick={() => navigate('/dashboard/coverletter')}
-         onMouseEnter={(e) => {
-           e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-           e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
-         }}
-         onMouseLeave={(e) => {
-           e.currentTarget.style.transform = 'translateY(0) scale(1)';
-           e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
-         }}
-       >
-         <div style={styles.decorativeCircle1}></div>
-         <div style={styles.decorativeCircle2}></div>
-         <div style={styles.optionIcon}>✉️</div>
-         <h2 style={styles.optionTitle}>Cover Letter Maker</h2>
-         <p style={styles.optionDescription}>
-           Generate professional cover letters tailored to any job. Make every application count.
-         </p>
-         <div style={styles.featureList}>
-           <div style={styles.featureItem}>✓ AI-powered writing</div>
-           <div style={styles.featureItem}>✓ Job-specific content</div>
-           <div style={styles.featureItem}>✓ Multiple formats</div>
-         </div>
-         <div style={styles.optionButton}>Get Started →</div>
-       </div>
-     </div>
-
-
+      {/* Cover Letter Maker Option */}
+      <div
+        style={styles.optionCard}
+        onClick={() => navigate('/dashboard/coverletter')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
+        }}
+      >
+        <div style={styles.decorativeCircle1}></div>
+        <div style={styles.decorativeCircle2}></div>
+        <div style={styles.optionIcon}>✉️</div>
+        <h2 style={styles.optionTitle}>Cover Letter Maker</h2>
+        <p style={styles.optionDescription}>
+          Generate professional cover letters tailored to any job. Make every application count.
+        </p>
+        <div style={styles.featureList}>
+          <div style={styles.featureItem}>✓ AI-powered writing</div>
+          <div style={styles.featureItem}>✓ Job-specific content</div>
+          <div style={styles.featureItem}>✓ Multiple formats</div>
+        </div>
+        <div style={styles.optionButton}>Get Started →</div>
+      </div>
+    </div>
    </div>
  );
 
@@ -191,29 +193,26 @@ const Dashboard: React.FC = () => {
 
          {/* Right section with user info */}
          <div style={styles.navRight}>
-           <div
-             style={styles.userInfo}
+           <button
+             onClick={() => navigate('/dashboard/profile')}
+             style={styles.profileButton}
              onMouseEnter={(e) => {
-               const avatar = e.currentTarget.querySelector('[data-avatar]') as HTMLElement;
-               const statusDot = e.currentTarget.querySelector('[data-status]') as HTMLElement;
-               if (avatar) {
-                 avatar.style.transform = 'scale(1.1)';
-                 avatar.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.5)';
-               }
-               if (statusDot) statusDot.style.transform = 'scale(1.2)';
-               e.currentTarget.style.background = 'rgba(102, 126, 234, 0.05)';
+               e.currentTarget.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+               e.currentTarget.style.color = 'white';
+               e.currentTarget.style.transform = 'translateY(-2px)';
+               e.currentTarget.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.5)';
              }}
              onMouseLeave={(e) => {
-               const avatar = e.currentTarget.querySelector('[data-avatar]') as HTMLElement;
-               const statusDot = e.currentTarget.querySelector('[data-status]') as HTMLElement;
-               if (avatar) {
-                 avatar.style.transform = 'scale(1)';
-                 avatar.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
-               }
-               if (statusDot) statusDot.style.transform = 'scale(1)';
-               e.currentTarget.style.background = 'transparent';
+               e.currentTarget.style.background = 'white';
+               e.currentTarget.style.color = '#667eea';
+               e.currentTarget.style.transform = 'translateY(0)';
+               e.currentTarget.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.2)';
              }}
            >
+             <span style={styles.profileIcon}>👤</span> My Profile
+           </button>
+           
+           <div style={styles.userInfo}>
              <div>
                <div style={styles.userName}>
                  {user?.first_name || user?.email?.split('@')[0]}
@@ -223,12 +222,13 @@ const Dashboard: React.FC = () => {
                </div>
              </div>
              <div style={{ position: 'relative' }}>
-               <div style={styles.userAvatar} data-avatar>
+               <div style={styles.userAvatar}>
                  {(user?.first_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
                </div>
-               <div style={styles.userStatusDot} data-status></div>
+               <div style={styles.userStatusDot}></div>
              </div>
            </div>
+
            <button
              onClick={handleLogout}
              style={styles.logoutButton}
@@ -249,17 +249,19 @@ const Dashboard: React.FC = () => {
            </button>
          </div>
        </div>
-     </nav>
+    </nav>
 
 
-     <main style={styles.main}>
-       {currentView === 'home' && renderHomeView()}
-       {currentView === 'portfolio' && <PortfolioMaker onBack={() => navigate('/dashboard')} />}
-       {currentView === 'resumes' && <PortfolioManager onBack={() => navigate('/dashboard')} />}
-       {currentView === 'preview' && <PortfolioEditor />}
-       {currentView === 'coverletter' && <CoverLetterMaker onBack={() => navigate('/dashboard')} />}
-     </main>
-   </div>
+    <main style={styles.main}>
+      {currentView === 'home' && renderHomeView()}
+      {currentView === 'profile' && <Profile onBack={() => navigate('/dashboard')} />}
+      {currentView === 'profile-edit' && <ProfileFormsEditor />}
+      {currentView === 'portfolio' && <PortfolioMaker onBack={() => navigate('/dashboard')} />}
+      {currentView === 'resumes' && <PortfolioManager onBack={() => navigate('/dashboard')} />}
+      {currentView === 'preview' && <PortfolioEditor />}
+      {currentView === 'coverletter' && <CoverLetterMaker onBack={() => navigate('/dashboard')} />}
+    </main>
+  </div>
  );
 };
 
@@ -421,6 +423,26 @@ const styles: { [key: string]: React.CSSProperties } = {
    alignItems: 'center',
    gap: '24px',
  },
+ profileButton: {
+   backgroundColor: 'white',
+   color: '#667eea',
+   border: '2px solid #667eea',
+   padding: '12px 24px',
+   borderRadius: '12px',
+   fontSize: '14px',
+   fontWeight: '700',
+   cursor: 'pointer',
+   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+   boxShadow: '0 2px 8px rgba(102, 126, 234, 0.2)',
+   display: 'flex',
+   alignItems: 'center',
+   gap: '8px',
+ },
+ profileIcon: {
+   fontSize: '18px',
+   display: 'inline-block',
+   transition: 'transform 0.3s ease',
+ },
  navStats: {
    display: 'flex',
    gap: '12px',
@@ -462,9 +484,9 @@ const styles: { [key: string]: React.CSSProperties } = {
    gap: '16px',
    padding: '8px 16px',
    borderRadius: '12px',
-   cursor: 'pointer',
    transition: 'all 0.3s ease',
    flexDirection: 'row-reverse' as 'row-reverse',
+   backgroundColor: 'white',
  },
  userAvatar: {
    width: '46px',
@@ -603,9 +625,11 @@ const styles: { [key: string]: React.CSSProperties } = {
  },
  optionsGrid: {
    display: 'grid',
-   gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+   gridTemplateColumns: 'repeat(2, 1fr)',
    gap: '32px',
    marginBottom: '50px',
+   maxWidth: '900px',
+   margin: '0 auto 50px',
  },
  optionCard: {
    backgroundColor: 'white',

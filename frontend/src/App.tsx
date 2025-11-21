@@ -23,16 +23,16 @@ const App: React.FC = () => {
          <Route path="/templates" element={<TemplateGallery />} />
          <Route path="/editor" element={<Editor />} />
         
-         {/* Protected Routes (require authentication) */}
-         <Route element={<ProtectedRoute />}>
-           <Route path="/dashboard" element={<Dashboard />} />
-           <Route path="/dashboard/portfolio" element={<Dashboard />} />
-           <Route path="/dashboard/resumes" element={<Dashboard />} />
-           <Route path="/dashboard/portfolio/preview/:resumeId" element={<Dashboard />} />
-           <Route path="/dashboard/coverletter" element={<Dashboard />} />
-         </Route>
-        
-         {/* Catch all - redirect to home */}
+        {/* Protected Routes (require authentication) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/profile" element={<Dashboard />} />
+          <Route path="/dashboard/profile/edit" element={<Dashboard />} />
+          <Route path="/dashboard/portfolio" element={<Dashboard />} />
+          <Route path="/dashboard/resumes" element={<Dashboard />} />
+          <Route path="/dashboard/portfolio/preview/:resumeId" element={<Dashboard />} />
+          <Route path="/dashboard/coverletter" element={<Dashboard />} />
+        </Route>         {/* Catch all - redirect to home */}
          <Route path="*" element={<Navigate to="/" replace />} />
        </Routes>
        

@@ -87,6 +87,7 @@ const AIChatbot: React.FC = () => {
     formatted = formatted.replace(/###\s*(.+?)(\n|$)/g, '<strong style="display: block; margin: 8px 0; font-size: 1.1em;">$1</strong>');
     
     // Convert bullet points (*, -, +) to proper list items
+    // eslint-disable-next-line no-useless-escape
     formatted = formatted.replace(/^[\*\-\+]\s+(.+)$/gm, '<li style="margin-left: 20px;">$1</li>');
     
     return formatted;
