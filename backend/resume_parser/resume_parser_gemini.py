@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import pdfplumber
 import json
-
+import os
 
 # ================================================================
 # 1) Pydantic Schema (used for Gemini structured-output)
@@ -124,6 +124,8 @@ Resume Text:
 
 if __name__ == "__main__":
     # api_key = "YOUR_API_KEY"
-    api_key = "AIzaSyAZLyAlpUdTr5fKBfRZ9nRDWP6AoHRRsNY"
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not found in environment variables")
     result = parse_resume_gemini("RahasyaBarkurResume.pdf", api_key)
     print(json.dumps(result, indent=2))
