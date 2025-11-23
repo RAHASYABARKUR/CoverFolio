@@ -359,9 +359,27 @@ def chat_with_ai_assistant(request):
     from .chatbot import chat_with_ai, chat_with_conversation_history
     
     message = request.data.get('message')
-    context = request.data.get('context', None)
+    # context = request.data.get('context', None)
     conversation_history = request.data.get('conversation_history', None)
-    
+    resume_id = request.data.get('resume_id', None)
+    context = None
+    try:
+        if resume_id:
+            resume = Resume.objects.get(id=resume_id, user=request.user)
+        else:
+            # fallback: most recent resume
+            resume = Resume.objects.filter(user=request.user).latest("id")
+
+        context = f"""
+STRUCTURED RESUME DATA:
+{resume.structured_data}
+
+FULL RESUME TEXT:
+{resume.extracted_text}  # prevent huge context
+        """
+    except Exception as e:
+        print("No resume context loaded:", e)
+        context = None
     if not message:
         return Response({
             'error': 'Message is required'
