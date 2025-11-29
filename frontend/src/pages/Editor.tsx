@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, CSSProperties } from "react";
 import { getTemplate, createDraft, updateDraft } from "../api/mock";
 import ClassicRenderer from "../renderers/classic";
 import resumeService, { Resume } from "../services/resume.service";
@@ -10,13 +10,28 @@ function cleanStr(v?: string | null): string {
   return trimmed;
 }
 
+function safeArray(val: any): any[] {
+  return Array.isArray(val) ? val : [];
+}
+
 function mapResumeToTemplateData(resume: Resume): any {
   const s: any = resume.structured_data;
   if (!s) return {};
 
-  const exp = Array.isArray(s.experience) ? s.experience : [];
-  const projects = Array.isArray(s.projects) ? s.projects : [];
-  const skills = Array.isArray(s.skills) ? s.skills : [];
+  const exp = safeArray(s.experience);
+  const projects = safeArray(s.projects);
+  const skills = safeArray(s.skills);
+
+  // NEW: other sections (names guessed from your editor)
+  const education = safeArray(s.education);
+  const certifications = safeArray(s.certifications);
+  const publications =
+    safeArray(s.publications_and_patents) || safeArray(s.publications);
+  const awards =
+    safeArray(s.accomplishments_awards) || safeArray(s.awards);
+  const hobbies =
+    safeArray(s.hobbies_and_interests) || safeArray(s.hobbies);
+  const contact = s.contact || {};
 
   return {
     about: {
@@ -29,10 +44,11 @@ function mapResumeToTemplateData(resume: Resume): any {
       },
       location: cleanStr(s.location),
       website: cleanStr(s.website),
+      email: cleanStr(s.email),
     },
 
     experience: exp.map((job: any) => {
-      const years = cleanStr(job.years);
+      const years = cleanStr(job.years || job.dates || job.date);
       let start = "";
       let end = "";
       if (years && years.includes("-")) {
@@ -42,12 +58,13 @@ function mapResumeToTemplateData(resume: Resume): any {
       }
 
       return {
-        role: cleanStr(job.role),
-        company: cleanStr(job.company),
+        role: cleanStr(job.role || job.title),
+        company: cleanStr(job.company || job.org || job.organization),
         location: cleanStr(job.location),
         start,
         end,
         description: cleanStr(job.role_summary || job.description),
+        years,
       };
     }),
 
@@ -63,22 +80,34 @@ function mapResumeToTemplateData(resume: Resume): any {
     skills: {
       items: skills.map(cleanStr).filter(Boolean),
     },
+
+    education,
+    certifications,
+    publications,
+    awards,
+    hobbies,
+    contact,
+
+    // extra editable text sections live here
+    sections: {},
+    headings: {},
   };
 }
 
-// Simple styles so we don't depend on Tailwind
-const containerStyle: React.CSSProperties = {
+/* ---------- inline styles (same as before) ---------- */
+
+const containerStyle: CSSProperties = {
   display: "flex",
   flexDirection: "row",
   gap: 24,
   padding: 24,
   alignItems: "flex-start",
-  background: "#e5e7eb", // slate-200-ish
+  background: "#e5e7eb",
   minHeight: "100vh",
   boxSizing: "border-box",
 };
 
-const leftColumnStyle: React.CSSProperties = {
+const leftColumnStyle: CSSProperties = {
   width: "100%",
   maxWidth: 420,
   display: "flex",
@@ -86,7 +115,7 @@ const leftColumnStyle: React.CSSProperties = {
   gap: 16,
 };
 
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   background: "#ffffff",
   borderRadius: 20,
   padding: 16,
@@ -94,7 +123,7 @@ const cardStyle: React.CSSProperties = {
   border: "1px solid rgba(148, 163, 184, 0.4)",
 };
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
   marginBottom: 4,
@@ -103,7 +132,7 @@ const labelStyle: React.CSSProperties = {
   color: "#6b7280",
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   padding: "8px 10px",
   borderRadius: 8,
@@ -112,24 +141,24 @@ const inputStyle: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-const textAreaStyle: React.CSSProperties = {
+const textAreaStyle: CSSProperties = {
   ...inputStyle,
   resize: "vertical",
   minHeight: 72,
 };
 
-const sectionTitleStyle: React.CSSProperties = {
+const sectionTitleStyle: CSSProperties = {
   fontSize: 14,
   fontWeight: 600,
   marginBottom: 8,
 };
 
-const buttonsRowStyle: React.CSSProperties = {
+const buttonsRowStyle: CSSProperties = {
   display: "flex",
   gap: 8,
 };
 
-const primaryButtonStyle: React.CSSProperties = {
+const primaryButtonStyle: CSSProperties = {
   padding: "8px 16px",
   borderRadius: 999,
   border: "none",
@@ -140,7 +169,7 @@ const primaryButtonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonStyle: CSSProperties = {
   padding: "8px 16px",
   borderRadius: 999,
   border: "1px solid #d1d5db",
@@ -151,7 +180,7 @@ const secondaryButtonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-const rightColumnStyle: React.CSSProperties = {
+const rightColumnStyle: CSSProperties = {
   flex: 1,
   minWidth: 0,
   borderRadius: 24,
@@ -170,55 +199,35 @@ export default function Editor() {
   const [data, setData] = useState<any>({});
   const [theme, setTheme] = useState<Record<string, string>>({});
 
-  // Load template schema (from mock API)
   useEffect(() => {
     getTemplate(templateKey).then(setTpl);
   }, [templateKey]);
 
-  // Prefill from latest parsed resume
+  // prefill from latest resume
   useEffect(() => {
     async function loadFromLatestResume() {
       try {
-        console.log("🔎 Prefill effect running, draftId =", draftId);
-
         const resp: any = await resumeService.listResumes();
-        console.log("📄 Resumes from API:", resp);
-
         const resumes: Resume[] = Array.isArray(resp)
           ? resp
           : resp?.resumes || [];
 
-        console.log("✅ Normalized resumes array:", resumes);
-
-        if (!resumes || !resumes.length) {
-          console.log("No resumes array, skipping prefill");
-          return;
-        }
+        if (!resumes || !resumes.length) return;
 
         const latest = [...resumes].sort((a, b) =>
           a.created_at && b.created_at && a.created_at < b.created_at ? 1 : -1
         )[0];
 
-        console.log("🧩 Using latest resume:", latest);
-
-        if (!latest.structured_data) {
-          console.log("Latest resume has no structured_data");
-          return;
-        }
+        if (!latest.structured_data) return;
 
         const mapped = mapResumeToTemplateData(latest);
-        console.log("🧱 Mapped template data:", mapped);
 
         setData((prev: any) => {
-          if (prev && Object.keys(prev).length > 0) {
-            console.log("Existing data present, not overriding:", prev);
-            return prev;
-          }
-          console.log("Setting data from resume");
+          if (prev && Object.keys(prev).length > 0) return prev;
           return mapped;
         });
       } catch (err) {
-        console.error("❌ Failed to prefill template from resume", err);
+        console.error("Failed to prefill template from resume", err);
       }
     }
 
@@ -252,6 +261,31 @@ export default function Editor() {
     alert("Saved!");
   }
 
+  /* ---------- helpers for editing arrays in a textarea ---------- */
+
+  const sections = data.sections || {};
+  const headings = data.headings || {};
+
+  function updateSection(key: string, value: any) {
+    setData((prev: any) => ({
+      ...prev,
+      sections: {
+        ...(prev?.sections || {}),
+        [key]: value,
+      },
+    }));
+  }
+
+  function updateHeading(key: string, value: string) {
+    setData((prev: any) => ({
+      ...prev,
+      headings: {
+        ...(prev?.headings || {}),
+        [key]: value,
+      },
+    }));
+  }
+
   return (
     <div style={containerStyle}>
       {/* LEFT: Editor controls */}
@@ -260,11 +294,13 @@ export default function Editor() {
           Editor — {tpl?.name || "Classic"}
         </h1>
         <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
-          Tweak your portfolio content on the left, and preview it on the right.
+          Tweak your portfolio content on the left, and preview it on the
+          right.
         </p>
 
-        {/* Title + About */}
+        {/* Title + About + Sections */}
         <div style={cardStyle}>
+          {/* Title */}
           <div style={{ marginBottom: 12 }}>
             <div style={labelStyle}>Title</div>
             <input
@@ -329,7 +365,7 @@ export default function Editor() {
             <div style={sectionTitleStyle}>Skills (comma-separated)</div>
             <input
               style={inputStyle}
-              placeholder="e.g. React, Django, AWS, Figma"
+              placeholder="e.g. React, Django, AWS, TCP/IP"
               value={(data?.skills?.items || []).join(", ")}
               onChange={(e) => {
                 const items = e.target.value
@@ -346,12 +382,143 @@ export default function Editor() {
               }}
             />
           </div>
+
+          {/* Overview text */}
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionTitleStyle}>Overview (right card)</div>
+            <textarea
+              style={textAreaStyle}
+              placeholder="Short overview that appears in the right-hand card."
+              value={sections.overview ?? ""}
+              onChange={(e) => updateSection("overview", e.target.value)}
+            />
+          </div>
+
+          {/* What I Work On bullets */}
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionTitleStyle}>
+              What I Work On (one bullet per line)
+            </div>
+            <textarea
+              style={textAreaStyle}
+              placeholder={"Backend services\nFront-end UIs\nCloud infra"}
+              value={(sections.whatIWorkOn || []).join("\n")}
+              onChange={(e) => {
+                const lines = e.target.value
+                  .split("\n")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                updateSection("whatIWorkOn", lines);
+              }}
+            />
+          </div>
+
+          {/* Engineering Philosophy bullets */}
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionTitleStyle}>
+              Engineering Philosophy (one bullet per line)
+            </div>
+            <textarea
+              style={textAreaStyle}
+              placeholder={
+                "Ship small, testable changes\nFavor readability\nUse metrics & logs"
+              }
+              value={(sections.engineeringPhilosophy || []).join("\n")}
+              onChange={(e) => {
+                const lines = e.target.value
+                  .split("\n")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                updateSection("engineeringPhilosophy", lines);
+              }}
+            />
+          </div>
+
+          {/* How I Work steps */}
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionTitleStyle}>How I Work steps</div>
+            <textarea
+              style={textAreaStyle}
+              placeholder={
+                "Discover & Design | Clarify the problem...\nBuild & Review | Implement in small pieces...\nDeploy & Learn | Monitor in production..."
+              }
+              value={(sections.howIWorkSteps || []).join("\n")}
+              onChange={(e) => {
+                const lines = e.target.value
+                  .split("\n")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                updateSection("howIWorkSteps", lines);
+              }}
+            />
+          </div>
+
+          {/* Experience intro */}
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionTitleStyle}>
+              Experience &amp; Impact intro line
+            </div>
+            <textarea
+              style={textAreaStyle}
+              placeholder="Teams I've worked with and problems I've helped solve."
+              value={sections.experienceIntro ?? ""}
+              onChange={(e) => updateSection("experienceIntro", e.target.value)}
+            />
+          </div>
+
+          {/* Footer subheading */}
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionTitleStyle}>Footer subheading</div>
+            <textarea
+              style={textAreaStyle}
+              placeholder="Short sentence under 'Thanks for Visiting'."
+              value={sections.footerSubheading ?? ""}
+              onChange={(e) =>
+                updateSection("footerSubheading", e.target.value)
+              }
+            />
+          </div>
+        </div>
+
+        {/* Section headings override */}
+        <div style={cardStyle}>
+          <div style={sectionTitleStyle}>Section headings</div>
+
+          {[
+            ["whatIWorkOn", "What I Work On"],
+            ["engineeringPhilosophy", "Engineering Philosophy"],
+            ["howIWork", "How I Work"],
+            ["projects", "Projects"],
+            ["experience", "Experience & Impact"],
+            ["techStack", "Tech Stack & Tools"],
+            ["education", "Education"],
+            ["certifications", "Certifications"],
+            ["publications", "Publications & Patents"],
+            ["awards", "Accomplishments & Awards"],
+            ["hobbies", "Hobbies & Interests"],
+            ["contact", "Contact Information"],
+            ["thanks", "Thanks for Visiting"],
+          ].map(([key, label]) => (
+            <div key={key} style={{ marginBottom: 10 }}>
+              <div style={{ ...labelStyle, textTransform: "none" }}>
+                {label}
+              </div>
+              <input
+                style={inputStyle}
+                value={headings[key as keyof typeof headings] || ""}
+                placeholder={label as string}
+                onChange={(e) => updateHeading(key, e.target.value)}
+              />
+            </div>
+          ))}
         </div>
 
         {/* Theme */}
         <div style={cardStyle}>
           <div style={sectionTitleStyle}>Theme</div>
-          <div style={{ ...labelStyle, textTransform: "none", letterSpacing: 0 }}>
+          <div
+            style={{ ...labelStyle, textTransform: "none", letterSpacing: 0 }}
+          >
             Accent color
           </div>
           <input
