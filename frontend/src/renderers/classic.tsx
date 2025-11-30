@@ -5,9 +5,26 @@ type Props = { data: any; theme: Record<string, string> };
 
 type HowStep = { title: string; body: string };
 
+// helper to make sure links are clickable
+function ensureUrl(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const url = raw.trim();
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return "https://" + url;
+}
+
 export default function ClassicRenderer({ data, theme }: Props) {
   const about = data?.about || {};
-  const links = about.links || {};
+  const rawLinks = about.links || {};
+
+  // prefer top-level fields, fall back to about.links
+  const links = {
+    github: about.github || rawLinks.github,
+    linkedin: about.linkedin || rawLinks.linkedin,
+    website: about.website || rawLinks.website,
+  };
+
   const sections = data?.sections || {};
   const headings = data?.headings || {};
 
@@ -107,17 +124,21 @@ export default function ClassicRenderer({ data, theme }: Props) {
     thanks: headings.thanks || "Thanks for Visiting",
   };
 
-  // ---------- small stats for the dark band ----------
+  // ---------- stats ----------
 
   const statProjects = allProjects.length;
   const statSkills = allSkills.length;
   const statExperience = allExperience.length;
   const statEducation = education.length;
 
+  const githubUrl = ensureUrl(links.github);
+  const linkedinUrl = ensureUrl(links.linkedin);
+  const websiteUrl = ensureUrl(links.website);
+
   return (
     <div className="ad-page" style={style}>
       <div className="ad-shell">
-        {/* TOP NAV — feels like a website */}
+        {/* TOP NAV */}
         <header className="ad-nav">
           <div className="ad-nav-brand">{name}</div>
           <nav className="ad-nav-links">
@@ -128,7 +149,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           </nav>
         </header>
 
-        {/* HERO SECTION — “Hey, I’m …” layout */}
+        {/* HERO */}
         <section className="ad-hero">
           <div className="ad-hero-left">
             <p className="ad-hero-kicker">SOFTWARE PORTFOLIO</p>
@@ -137,9 +158,9 @@ export default function ClassicRenderer({ data, theme }: Props) {
             <p className="ad-hero-body">{intro}</p>
 
             <div className="ad-hero-links">
-              {links.github && (
+              {githubUrl && (
                 <a
-                  href={links.github}
+                  href={githubUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="ad-pill"
@@ -147,9 +168,9 @@ export default function ClassicRenderer({ data, theme }: Props) {
                   GitHub
                 </a>
               )}
-              {links.linkedin && (
+              {linkedinUrl && (
                 <a
-                  href={links.linkedin}
+                  href={linkedinUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="ad-pill"
@@ -192,7 +213,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           </div>
         </section>
 
-        {/* APPROACH SECTION — image + text like “My Approach” */}
+        {/* APPROACH */}
         <section className="ad-approach">
           <div className="ad-approach-media" />
           <div className="ad-approach-text">
@@ -211,7 +232,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           </div>
         </section>
 
-        {/* WHAT I WORK ON + PHILOSOPHY — two-column text band */}
+        {/* WHAT I WORK ON + PHILOSOPHY */}
         <section className="ad-two-col">
           <div className="ad-card">
             <h2 className="ad-section-title">{H.whatIWorkOn}</h2>
@@ -237,7 +258,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           </div>
         </section>
 
-        {/* DARK STATS BAND — like the badges row in Adri */}
+        {/* STATS BAND */}
         <section className="ad-stats">
           <div className="ad-stat">
             <div className="ad-stat-number">{statProjects}</div>
@@ -257,7 +278,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           </div>
         </section>
 
-        {/* CASE STUDIES / PROJECTS */}
+        {/* PROJECTS */}
         <section className="ad-case-studies" id="projects">
           <h2 className="ad-case-title">{H.projects}</h2>
           <p className="ad-section-subtitle center">
@@ -278,7 +299,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
                   )}
                   {p.link && (
                     <a
-                      href={p.link}
+                      href={ensureUrl(p.link)}
                       target="_blank"
                       rel="noreferrer"
                       className="ad-case-card-link"
@@ -489,7 +510,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           )}
         </section>
 
-        {/* CONTACT / CTA — “Get in touch” style */}
+        {/* CONTACT */}
         <section className="ad-contact" id="contact">
           <div className="ad-contact-left">
             <h2 className="ad-contact-title">{H.contact}</h2>
@@ -503,9 +524,9 @@ export default function ClassicRenderer({ data, theme }: Props) {
                   Phone · {contactInfo.phone}
                 </div>
               )}
-              {links.linkedin && (
+              {linkedinUrl && (
                 <div className="ad-contact-line">
-                  LinkedIn · {links.linkedin}
+                  LinkedIn · {linkedinUrl}
                 </div>
               )}
             </div>

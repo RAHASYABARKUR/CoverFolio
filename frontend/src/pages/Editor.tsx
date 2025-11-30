@@ -34,18 +34,25 @@ function mapResumeToTemplateData(resume: Resume): any {
   const contact = s.contact || {};
 
   return {
-    about: {
-      name: cleanStr(s.name),
-      headline: cleanStr(s.headline || s.title),
-      summary: cleanStr(s.summary || s.objective || ""),
-      links: {
-        github: cleanStr(s.github),
-        linkedin: cleanStr(s.linkedin),
-      },
-      location: cleanStr(s.location),
-      website: cleanStr(s.website),
-      email: cleanStr(s.email),
-    },
+about: {
+  name: cleanStr(s.name),
+  headline: cleanStr(s.headline || s.title),
+  summary: cleanStr(s.summary || s.objective || ""),
+  location: cleanStr(s.location),
+  website: cleanStr(s.website),
+  email: cleanStr(s.email),
+
+  // store directly + inside links for compatibility
+  github: cleanStr((s as any).github || (s as any).github_url),
+  linkedin: cleanStr((s as any).linkedin || (s as any).linkedin_url),
+
+  links: {
+    github: cleanStr((s as any).github || (s as any).github_url),
+    linkedin: cleanStr((s as any).linkedin || (s as any).linkedin_url),
+    website: cleanStr(s.website),
+  },
+},
+
 
     experience: exp.map((job: any) => {
       const years = cleanStr(job.years || job.dates || job.date);
