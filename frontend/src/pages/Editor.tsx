@@ -22,7 +22,6 @@ function mapResumeToTemplateData(resume: Resume): any {
   const projects = safeArray(s.projects);
   const skills = safeArray(s.skills);
 
-  // NEW: other sections (names guessed from your editor)
   const education = safeArray(s.education);
   const certifications = safeArray(s.certifications);
   const publications =
@@ -34,25 +33,18 @@ function mapResumeToTemplateData(resume: Resume): any {
   const contact = s.contact || {};
 
   return {
-about: {
-  name: cleanStr(s.name),
-  headline: cleanStr(s.headline || s.title),
-  summary: cleanStr(s.summary || s.objective || ""),
-  location: cleanStr(s.location),
-  website: cleanStr(s.website),
-  email: cleanStr(s.email),
-
-  // store directly + inside links for compatibility
-  github: cleanStr((s as any).github || (s as any).github_url),
-  linkedin: cleanStr((s as any).linkedin || (s as any).linkedin_url),
-
-  links: {
-    github: cleanStr((s as any).github || (s as any).github_url),
-    linkedin: cleanStr((s as any).linkedin || (s as any).linkedin_url),
-    website: cleanStr(s.website),
-  },
-},
-
+    about: {
+      name: cleanStr(s.name),
+      headline: cleanStr(s.headline || s.title),
+      summary: cleanStr(s.summary || s.objective || ""),
+      links: {
+        github: cleanStr(s.github),
+        linkedin: cleanStr(s.linkedin),
+      },
+      location: cleanStr(s.location),
+      website: cleanStr(s.website),
+      email: cleanStr(s.email),
+    },
 
     experience: exp.map((job: any) => {
       const years = cleanStr(job.years || job.dates || job.date);
@@ -95,13 +87,12 @@ about: {
     hobbies,
     contact,
 
-    // extra editable text sections live here
     sections: {},
     headings: {},
   };
 }
 
-/* ---------- inline styles (same as before) ---------- */
+/* ---------- inline styles ---------- */
 
 const containerStyle: CSSProperties = {
   display: "flex",
@@ -267,8 +258,6 @@ export default function Editor() {
     );
     alert("Saved!");
   }
-
-  /* ---------- helpers for editing arrays in a textarea ---------- */
 
   const sections = data.sections || {};
   const headings = data.headings || {};
@@ -484,6 +473,108 @@ export default function Editor() {
                 updateSection("footerSubheading", e.target.value)
               }
             />
+          </div>
+
+          {/* CONTENT OVERRIDES FOR NEW CARDS */}
+          <div style={{ marginTop: 20 }}>
+            <div style={sectionTitleStyle}>Content</div>
+
+            {/* Education */}
+            <div style={{ marginTop: 10 }}>
+              <div style={{ ...labelStyle, textTransform: "none" }}>
+                Education (one per line)
+              </div>
+              <textarea
+                style={textAreaStyle}
+                placeholder={
+                  "Master of Science in ...\nBachelor of Technology in ..."
+                }
+                value={(sections.educationOverride || []).join("\n")}
+                onChange={(e) => {
+                  const lines = e.target.value
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  updateSection("educationOverride", lines);
+                }}
+              />
+            </div>
+
+            {/* Certifications */}
+            <div style={{ marginTop: 10 }}>
+              <div style={{ ...labelStyle, textTransform: "none" }}>
+                Certifications (one per line)
+              </div>
+              <textarea
+                style={textAreaStyle}
+                placeholder={"AWS Solutions Architect – Associate\n..."}
+                value={(sections.certificationsOverride || []).join("\n")}
+                onChange={(e) => {
+                  const lines = e.target.value
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  updateSection("certificationsOverride", lines);
+                }}
+              />
+            </div>
+
+            {/* Publications & Patents */}
+            <div style={{ marginTop: 10 }}>
+              <div style={{ ...labelStyle, textTransform: "none" }}>
+                Publications &amp; Patents (one per line)
+              </div>
+              <textarea
+                style={textAreaStyle}
+                placeholder={"Paper title – Conference, 2024\n..."}
+                value={(sections.publicationsOverride || []).join("\n")}
+                onChange={(e) => {
+                  const lines = e.target.value
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  updateSection("publicationsOverride", lines);
+                }}
+              />
+            </div>
+
+            {/* Accomplishments & Awards */}
+            <div style={{ marginTop: 10 }}>
+              <div style={{ ...labelStyle, textTransform: "none" }}>
+                Accomplishments &amp; Awards (one per line)
+              </div>
+              <textarea
+                style={textAreaStyle}
+                placeholder={"Best Intern Award – VMware, 2022\n..."}
+                value={(sections.awardsOverride || []).join("\n")}
+                onChange={(e) => {
+                  const lines = e.target.value
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  updateSection("awardsOverride", lines);
+                }}
+              />
+            </div>
+
+            {/* Hobbies & Interests */}
+            <div style={{ marginTop: 10 }}>
+              <div style={{ ...labelStyle, textTransform: "none" }}>
+                Hobbies &amp; Interests (one per line)
+              </div>
+              <textarea
+                style={textAreaStyle}
+                placeholder={"Painting\nPhotography\nTravel"}
+                value={(sections.hobbiesOverride || []).join("\n")}
+                onChange={(e) => {
+                  const lines = e.target.value
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  updateSection("hobbiesOverride", lines);
+                }}
+              />
+            </div>
           </div>
         </div>
 

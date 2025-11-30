@@ -5,26 +5,9 @@ type Props = { data: any; theme: Record<string, string> };
 
 type HowStep = { title: string; body: string };
 
-// helper to make sure links are clickable
-function ensureUrl(raw?: string): string | undefined {
-  if (!raw) return undefined;
-  const url = raw.trim();
-  if (!url) return undefined;
-  if (/^https?:\/\//i.test(url)) return url;
-  return "https://" + url;
-}
-
 export default function ClassicRenderer({ data, theme }: Props) {
   const about = data?.about || {};
-  const rawLinks = about.links || {};
-
-  // prefer top-level fields, fall back to about.links
-  const links = {
-    github: about.github || rawLinks.github,
-    linkedin: about.linkedin || rawLinks.linkedin,
-    website: about.website || rawLinks.website,
-  };
-
+  const links = about.links || {};
   const sections = data?.sections || {};
   const headings = data?.headings || {};
 
@@ -37,6 +20,13 @@ export default function ClassicRenderer({ data, theme }: Props) {
   const awards = data?.awards || [];
   const hobbies = data?.hobbies || [];
   const contactInfo = data?.contact || {};
+
+  // ---- overrides for new cards ----
+  const educationOverride: string[] = sections.educationOverride || [];
+  const certificationsOverride: string[] = sections.certificationsOverride || [];
+  const publicationsOverride: string[] = sections.publicationsOverride || [];
+  const awardsOverride: string[] = sections.awardsOverride || [];
+  const hobbiesOverride: string[] = sections.hobbiesOverride || [];
 
   const accent = theme["--accent"] || "#6366f1";
 
@@ -124,21 +114,17 @@ export default function ClassicRenderer({ data, theme }: Props) {
     thanks: headings.thanks || "Thanks for Visiting",
   };
 
-  // ---------- stats ----------
+  // ---------- small stats for the dark band ----------
 
   const statProjects = allProjects.length;
   const statSkills = allSkills.length;
   const statExperience = allExperience.length;
   const statEducation = education.length;
 
-  const githubUrl = ensureUrl(links.github);
-  const linkedinUrl = ensureUrl(links.linkedin);
-  const websiteUrl = ensureUrl(links.website);
-
   return (
     <div className="ad-page" style={style}>
       <div className="ad-shell">
-        {/* TOP NAV */}
+        {/* TOP NAV — feels like a website */}
         <header className="ad-nav">
           <div className="ad-nav-brand">{name}</div>
           <nav className="ad-nav-links">
@@ -149,7 +135,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           </nav>
         </header>
 
-        {/* HERO */}
+        {/* HERO SECTION */}
         <section className="ad-hero">
           <div className="ad-hero-left">
             <p className="ad-hero-kicker">SOFTWARE PORTFOLIO</p>
@@ -158,9 +144,9 @@ export default function ClassicRenderer({ data, theme }: Props) {
             <p className="ad-hero-body">{intro}</p>
 
             <div className="ad-hero-links">
-              {githubUrl && (
+              {links.github && (
                 <a
-                  href={githubUrl}
+                  href={links.github}
                   target="_blank"
                   rel="noreferrer"
                   className="ad-pill"
@@ -168,9 +154,9 @@ export default function ClassicRenderer({ data, theme }: Props) {
                   GitHub
                 </a>
               )}
-              {linkedinUrl && (
+              {links.linkedin && (
                 <a
-                  href={linkedinUrl}
+                  href={links.linkedin}
                   target="_blank"
                   rel="noreferrer"
                   className="ad-pill"
@@ -213,7 +199,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           </div>
         </section>
 
-        {/* APPROACH */}
+        {/* APPROACH / HOW I WORK */}
         <section className="ad-approach">
           <div className="ad-approach-media" />
           <div className="ad-approach-text">
@@ -299,7 +285,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
                   )}
                   {p.link && (
                     <a
-                      href={ensureUrl(p.link)}
+                      href={p.link}
                       target="_blank"
                       rel="noreferrer"
                       className="ad-case-card-link"
@@ -323,15 +309,14 @@ export default function ClassicRenderer({ data, theme }: Props) {
             {allExperience.length ? (
               <ul className="ad-list-plain">
                 {allExperience.map((e: any, i: number) => {
-                  const role = e.role || e.title || "Role";
-                  const company =
-                    e.company || e.org || e.organization || "";
+                  const r = e.role || e.title || "Role";
+                  const company = e.company || e.org || e.organization || "";
                   const location = e.location || "";
                   const years = e.years || e.dates || e.date || "";
                   const lineParts = [company, location, years].filter(Boolean);
                   return (
                     <li key={i}>
-                      <div className="ad-bold-line">{role}</div>
+                      <div className="ad-bold-line">{r}</div>
                       {lineParts.length > 0 && (
                         <div className="ad-muted-line">
                           {lineParts.join(" · ")}
@@ -374,7 +359,13 @@ export default function ClassicRenderer({ data, theme }: Props) {
         <section className="ad-two-col" id="education">
           <div className="ad-card">
             <h2 className="ad-section-title">{H.education}</h2>
-            {education.length ? (
+            {educationOverride && educationOverride.length ? (
+              <ul className="ad-list-plain">
+                {educationOverride.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            ) : education.length ? (
               <ul className="ad-list-plain">
                 {education.map((e: any, i: number) => {
                   const school =
@@ -404,7 +395,13 @@ export default function ClassicRenderer({ data, theme }: Props) {
 
           <div className="ad-card">
             <h2 className="ad-section-title">{H.certifications}</h2>
-            {certifications.length ? (
+            {certificationsOverride && certificationsOverride.length ? (
+              <ul className="ad-list-plain">
+                {certificationsOverride.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            ) : certifications.length ? (
               <ul className="ad-list-plain">
                 {certifications.map((c: any, i: number) => {
                   const name = c.name || c.title || "";
@@ -432,7 +429,13 @@ export default function ClassicRenderer({ data, theme }: Props) {
         <section className="ad-two-col">
           <div className="ad-card">
             <h2 className="ad-section-title">{H.publications}</h2>
-            {publications.length ? (
+            {publicationsOverride && publicationsOverride.length ? (
+              <ul className="ad-list-plain">
+                {publicationsOverride.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            ) : publications.length ? (
               <ul className="ad-list-plain">
                 {publications.map((p: any, i: number) => {
                   const title = p.title || p.name || "";
@@ -457,7 +460,13 @@ export default function ClassicRenderer({ data, theme }: Props) {
 
           <div className="ad-card">
             <h2 className="ad-section-title">{H.awards}</h2>
-            {awards.length ? (
+            {awardsOverride && awardsOverride.length ? (
+              <ul className="ad-list-plain">
+                {awardsOverride.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            ) : awards.length ? (
               <ul className="ad-list-plain">
                 {awards.map((a: any, i: number) => {
                   const title = a.title || a.name || "";
@@ -491,7 +500,14 @@ export default function ClassicRenderer({ data, theme }: Props) {
         {/* HOBBIES */}
         <section className="ad-full-card">
           <h2 className="ad-section-title">{H.hobbies}</h2>
-          {Array.isArray(hobbies) && hobbies.length ? (
+
+          {hobbiesOverride && hobbiesOverride.length ? (
+            <ul className="ad-list-plain">
+              {hobbiesOverride.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          ) : Array.isArray(hobbies) && hobbies.length ? (
             <div className="ad-chip-grid">
               {hobbies.map((h: any, i: number) => {
                 const label =
@@ -510,7 +526,7 @@ export default function ClassicRenderer({ data, theme }: Props) {
           )}
         </section>
 
-        {/* CONTACT */}
+        {/* CONTACT / CTA */}
         <section className="ad-contact" id="contact">
           <div className="ad-contact-left">
             <h2 className="ad-contact-title">{H.contact}</h2>
@@ -524,9 +540,9 @@ export default function ClassicRenderer({ data, theme }: Props) {
                   Phone · {contactInfo.phone}
                 </div>
               )}
-              {linkedinUrl && (
+              {links.linkedin && (
                 <div className="ad-contact-line">
-                  LinkedIn · {linkedinUrl}
+                  LinkedIn · {links.linkedin}
                 </div>
               )}
             </div>
