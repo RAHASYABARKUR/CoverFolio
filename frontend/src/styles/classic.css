@@ -6,29 +6,31 @@
 
 .ad-page {
   min-height: 100vh;
-  padding: 32px 0;
+  /* 3–4 cm-ish border around the whole page */
+  padding: 24px;              /* was 32px 0 */
   background: radial-gradient(
     circle at top left,
     #a855f7 0,
     #4f46e5 40%,
     #0f172a 100%
   );
-  display: flex;
-  justify-content: center;
   box-sizing: border-box;
 }
 
+/* Make the inner shell almost full-width */
 .ad-shell {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1400px;          /* was 1120px */
+  margin: 0 auto;             /* centers the shell */
   background: #f5f3ff;
-  border-radius: 32px;
+  border-radius: 28px;        /* slightly softer corners, optional */
   box-shadow: 0 30px 80px rgba(15, 23, 42, 0.55);
-  padding: 24px 32px 40px;
+  padding: 28px 36px 40px;    /* a bit more breathing room inside */
   color: #111827;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
 }
+
 
 /* TOP NAV */
 

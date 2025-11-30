@@ -1,5 +1,12 @@
+// frontend/src/pages/Editor.tsx
 import { useEffect, useMemo, useState, CSSProperties } from "react";
-import { getTemplate, createDraft, updateDraft } from "../api/mock";
+import {
+  getTemplate,
+  createDraft,
+  updateDraft,
+  publishDraft,
+} from "../api/mock";
+
 import ClassicRenderer from "../renderers/classic";
 import resumeService, { Resume } from "../services/resume.service";
 
@@ -87,6 +94,7 @@ function mapResumeToTemplateData(resume: Resume): any {
     hobbies,
     contact,
 
+    // extra editable text sections live here
     sections: {},
     headings: {},
   };
@@ -196,6 +204,7 @@ export default function Editor() {
   const [title, setTitle] = useState("My Portfolio");
   const [data, setData] = useState<any>({});
   const [theme, setTheme] = useState<Record<string, string>>({});
+  const [publishUrl, setPublishUrl] = useState<string | null>(null);
 
   useEffect(() => {
     getTemplate(templateKey).then(setTpl);
@@ -239,8 +248,9 @@ export default function Editor() {
 
   const accentColor = resolvedTheme["--accent"] || "#6366f1";
 
-  async function saveDraft() {
-    if (!tpl) return;
+  // saveDraft now returns the saved draft
+  async function saveDraft(showAlert = true): Promise<any | null> {
+    if (!tpl) return null;
     const payload = {
       title,
       template_key: templateKey,
@@ -251,12 +261,51 @@ export default function Editor() {
     if (draftId) saved = await updateDraft(draftId, payload);
     else saved = await createDraft(payload);
 
-    window.history.replaceState(
-      null,
-      "",
-      `/editor?template=${templateKey}&id=${saved.id}`
-    );
-    alert("Saved!");
+    if (!draftId) {
+      window.history.replaceState(
+        null,
+        "",
+        `/editor?template=${templateKey}&id=${saved.id}`
+      );
+    }
+    if (showAlert) alert("Saved!");
+    return saved;
+  }
+
+  async function handlePublish() {
+    if (!tpl) return;
+
+    const payload = {
+      title,
+      template_key: templateKey,
+      data,
+      theme_overrides: theme,
+    };
+
+    let id = draftId;
+    let saved;
+
+    // Ensure draft exists
+    if (!id) {
+      saved = await createDraft(payload);
+      id = saved.id;
+      window.history.replaceState(
+        null,
+        "",
+        `/editor?template=${templateKey}&id=${id}`
+      );
+    } else {
+      saved = await updateDraft(id, payload);
+    }
+
+    // Publish
+    const published = await publishDraft(id);
+
+    const url = `${window.location.origin}/p/${
+      published.slug || published.id
+    }`;
+
+    setPublishUrl(url); // show modal
   }
 
   const sections = data.sections || {};
@@ -281,6 +330,8 @@ export default function Editor() {
       },
     }));
   }
+
+  /* ---------- render ---------- */
 
   return (
     <div style={containerStyle}>
@@ -633,13 +684,15 @@ export default function Editor() {
 
         {/* Actions */}
         <div style={buttonsRowStyle}>
-          <button style={primaryButtonStyle} onClick={saveDraft}>
+          <button
+            style={primaryButtonStyle}
+            onClick={() => {
+              void saveDraft(true);
+            }}
+          >
             Save Draft
           </button>
-          <button
-            style={secondaryButtonStyle}
-            onClick={() => alert("Will publish in F4")}
-          >
+          <button style={secondaryButtonStyle} onClick={handlePublish}>
             Publish
           </button>
         </div>
@@ -649,6 +702,96 @@ export default function Editor() {
       <div style={rightColumnStyle}>
         <ClassicRenderer data={data} theme={resolvedTheme} />
       </div>
+
+      {/* Publish modal */}
+      {publishUrl && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "24px",
+              borderRadius: "12px",
+              width: "420px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+              textAlign: "center",
+            }}
+          >
+            <h2 style={{ marginBottom: "12px" }}>🎉 Portfolio Published!</h2>
+
+            <p style={{ wordBreak: "break-all", marginBottom: "16px" }}>
+              <strong>Public URL:</strong>
+              <br />
+              {publishUrl}
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "center",
+              }}
+            >
+              <button
+                style={{
+                  background: "#4F46E5",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(publishUrl);
+                  alert("URL copied to clipboard!");
+                }}
+              >
+                📋 Copy Link
+              </button>
+
+              <button
+                style={{
+                  background: "#1E88E5",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={() => window.open(publishUrl, "_blank")}
+              >
+                🔗 Open
+              </button>
+            </div>
+
+            <button
+              style={{
+                marginTop: "20px",
+                padding: "8px 16px",
+                borderRadius: "6px",
+                border: "1px solid #ddd",
+                background: "#f9f9f9",
+                cursor: "pointer",
+              }}
+              onClick={() => setPublishUrl(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
