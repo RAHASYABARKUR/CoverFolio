@@ -1,67 +1,89 @@
-// src/pages/PublicPortfolio.tsx
-import React, { useEffect, useState } from "react";
+// frontend/src/pages/PublicPortfolio.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getPublicBySlug, getTemplate } from "../api/mock";
 import ClassicRenderer from "../renderers/classic";
-import { PortfolioDraft } from "../types/portfolio";
+import ModernRenderer from "../renderers/modern";
+import { PortfolioDraft, TemplateDTO } from "../types/portfolio";
 
 const PublicPortfolio: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [draft, setDraft] = useState<PortfolioDraft | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [theme, setTheme] = useState<Record<string, string>>({});
 
+  const [draft, setDraft] = useState<PortfolioDraft | null>(null);
+  const [tpl, setTpl] = useState<TemplateDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // load published draft by slug
   useEffect(() => {
-    async function load() {
+    let cancelled = false;
+
+    async function loadDraft() {
       if (!slug) {
-        setError("Missing slug.");
+        setDraft(null);
         setLoading(false);
         return;
       }
-
-      try {
-        const d = await getPublicBySlug(slug);
-        if (!d) {
-          setError("Portfolio not found or not published.");
-          setLoading(false);
-          return;
-        }
-        setDraft(d);
-
-        const tpl = await getTemplate(d.template_key || "classic");
-        setTheme(tpl?.default_theme || {});
-      } catch (e) {
-        console.error(e);
-        setError("Failed to load portfolio.");
-      } finally {
+      setLoading(true);
+      const d = await getPublicBySlug(slug);
+      if (!cancelled) {
+        setDraft(d ?? null);
         setLoading(false);
       }
     }
 
-    load();
+    loadDraft();
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
+
+  // load template definition to get default theme
+  useEffect(() => {
+    if (!draft?.template_key) {
+      setTpl(null);
+      return;
+    }
+    getTemplate(draft.template_key).then((t) => setTpl(t ?? null));
+  }, [draft?.template_key]);
+
+  const theme = useMemo(
+    () => ({
+      ...(tpl?.default_theme || {}),
+      ...(draft?.theme_overrides || {}),
+    }),
+    [tpl, draft]
+  );
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: "center" }}>Loading…</div>
-    );
-  }
-
-  if (error || !draft) {
-    return (
-      <div style={{ padding: 40, textAlign: "center", color: "#ef4444" }}>
-        {error || "Portfolio not found."}
+      <div style={{ padding: 32, fontFamily: "system-ui, sans-serif" }}>
+        Loading…
       </div>
     );
   }
 
+  if (!draft) {
+    return (
+      <div
+        style={{
+          padding: 32,
+          fontFamily: "system-ui, sans-serif",
+          color: "#dc2626",
+        }}
+      >
+        Portfolio not found or not published.
+      </div>
+    );
+  }
+
+  // 👉 Choose renderer based on template_key
+  const Renderer =
+    draft.template_key === "modern" ? ModernRenderer : ClassicRenderer;
 
   return (
-    <ClassicRenderer
-      data={draft.data || {}}
-      theme={theme}
-    />
+    <div style={{ margin: 0, minHeight: "100vh" }}>
+      <Renderer data={draft.data} theme={theme} />
+    </div>
   );
 };
 

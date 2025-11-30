@@ -8,7 +8,10 @@ import {
 } from "../api/mock";
 
 import ClassicRenderer from "../renderers/classic";
+import ModernRenderer from "../renderers/modern";
 import resumeService, { Resume } from "../services/resume.service";
+
+/* ---------- helpers ---------- */
 
 function cleanStr(v?: string | null): string {
   if (!v) return "";
@@ -94,7 +97,6 @@ function mapResumeToTemplateData(resume: Resume): any {
     hobbies,
     contact,
 
-    // extra editable text sections live here
     sections: {},
     headings: {},
   };
@@ -195,6 +197,8 @@ const rightColumnStyle: CSSProperties = {
   background: "#f8fafc",
 };
 
+/* ---------- component ---------- */
+
 export default function Editor() {
   const qs = new URLSearchParams(window.location.search);
   const templateKey = qs.get("template") || "classic";
@@ -205,6 +209,10 @@ export default function Editor() {
   const [data, setData] = useState<any>({});
   const [theme, setTheme] = useState<Record<string, string>>({});
   const [publishUrl, setPublishUrl] = useState<string | null>(null);
+
+  // choose renderer based on template key
+  const Renderer =
+    templateKey === "modern" ? ModernRenderer : ClassicRenderer;
 
   useEffect(() => {
     getTemplate(templateKey).then(setTpl);
@@ -248,7 +256,33 @@ export default function Editor() {
 
   const accentColor = resolvedTheme["--accent"] || "#6366f1";
 
-  // saveDraft now returns the saved draft
+  /* ---------- sections / headings helpers ---------- */
+
+  const sections = data.sections || {};
+  const headings = data.headings || {};
+
+  function updateSection(key: string, value: any) {
+    setData((prev: any) => ({
+      ...prev,
+      sections: {
+        ...(prev?.sections || {}),
+        [key]: value,
+      },
+    }));
+  }
+
+  function updateHeading(key: string, value: string) {
+    setData((prev: any) => ({
+      ...prev,
+      headings: {
+        ...(prev?.headings || {}),
+        [key]: value,
+      },
+    }));
+  }
+
+  /* ---------- save / publish ---------- */
+
   async function saveDraft(showAlert = true): Promise<any | null> {
     if (!tpl) return null;
     const payload = {
@@ -285,7 +319,6 @@ export default function Editor() {
     let id = draftId;
     let saved;
 
-    // Ensure draft exists
     if (!id) {
       saved = await createDraft(payload);
       id = saved.id;
@@ -298,37 +331,13 @@ export default function Editor() {
       saved = await updateDraft(id, payload);
     }
 
-    // Publish
     const published = await publishDraft(id);
 
     const url = `${window.location.origin}/p/${
       published.slug || published.id
     }`;
 
-    setPublishUrl(url); // show modal
-  }
-
-  const sections = data.sections || {};
-  const headings = data.headings || {};
-
-  function updateSection(key: string, value: any) {
-    setData((prev: any) => ({
-      ...prev,
-      sections: {
-        ...(prev?.sections || {}),
-        [key]: value,
-      },
-    }));
-  }
-
-  function updateHeading(key: string, value: string) {
-    setData((prev: any) => ({
-      ...prev,
-      headings: {
-        ...(prev?.headings || {}),
-        [key]: value,
-      },
-    }));
+    setPublishUrl(url);
   }
 
   /* ---------- render ---------- */
@@ -338,7 +347,7 @@ export default function Editor() {
       {/* LEFT: Editor controls */}
       <div style={leftColumnStyle}>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
-          Editor — {tpl?.name || "Classic"}
+          Editor — {tpl?.name || (templateKey === "modern" ? "Modern" : "Classic")}
         </h1>
         <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
           Tweak your portfolio content on the left, and preview it on the
@@ -700,7 +709,7 @@ export default function Editor() {
 
       {/* RIGHT: Live preview */}
       <div style={rightColumnStyle}>
-        <ClassicRenderer data={data} theme={resolvedTheme} />
+        <Renderer data={data} theme={resolvedTheme} />
       </div>
 
       {/* Publish modal */}
