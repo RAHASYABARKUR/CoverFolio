@@ -20,8 +20,12 @@ const PortfolioMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const resumes = await resumeService.listResumes();
       
       if (resumes.length > 0) {
-        // Get the most recent resume as profile resume
-        const latestResume = resumes[resumes.length - 1];
+        // Get the most recent resume by created_at timestamp
+        // Sort by created_at in descending order (most recent first)
+        const sortedResumes = [...resumes].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        const latestResume = sortedResumes[0];
         setProfileResume(latestResume);
       }
     } catch (err: any) {
