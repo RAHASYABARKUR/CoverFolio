@@ -401,3 +401,237 @@ FULL RESUME TEXT:
         return Response({
             'error': f'Failed to get AI response: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============== COVER LETTER DRAFT ENDPOINTS ==============
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def save_cover_letter_draft(request):
+    """
+    Save a cover letter draft.
+    
+    POST /api/resume/cover-letters/save/
+    Body: {
+        "title": "Software Engineer at Google",
+        "role": "Software Engineer",
+        "company_name": "Google",
+        "content": "Dear Hiring Manager,...",
+        "template_style": "professional",
+        "font_family": "Arial",
+        "font_size": "medium",
+        "text_align": "left",
+        "resume_id": 1 (optional)
+    }
+    """
+    from .models import CoverLetter
+    
+    title = request.data.get('title')
+    role = request.data.get('role', '')
+    company_name = request.data.get('company_name', '')
+    content = request.data.get('content')
+    template_style = request.data.get('template_style', 'professional')
+    font_family = request.data.get('font_family', 'Arial')
+    font_size = request.data.get('font_size', 'medium')
+    text_align = request.data.get('text_align', 'left')
+    resume_id = request.data.get('resume_id', None)
+    
+    if not title or not content:
+        return Response({
+            'error': 'Title and content are required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        resume = None
+        if resume_id:
+            try:
+                resume = Resume.objects.get(id=resume_id, user=request.user)
+            except Resume.DoesNotExist:
+                pass  # Resume is optional
+        
+        cover_letter = CoverLetter.objects.create(
+            user=request.user,
+            resume=resume,
+            title=title,
+            role=role,
+            company_name=company_name,
+            content=content,
+            template_style=template_style,
+            font_family=font_family,
+            font_size=font_size,
+            text_align=text_align
+        )
+        
+        return Response({
+            'message': 'Cover letter draft saved successfully',
+            'cover_letter': {
+                'id': cover_letter.id,
+                'title': cover_letter.title,
+                'role': cover_letter.role,
+                'company_name': cover_letter.company_name,
+                'content': cover_letter.content,
+                'template_style': cover_letter.template_style,
+                'font_family': cover_letter.font_family,
+                'font_size': cover_letter.font_size,
+                'text_align': cover_letter.text_align,
+                'created_at': cover_letter.created_at.isoformat(),
+                'updated_at': cover_letter.updated_at.isoformat(),
+            }
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response({
+            'error': f'Failed to save cover letter draft: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_cover_letter_drafts(request):
+    """
+    List all cover letter drafts for the authenticated user.
+    
+    GET /api/resume/cover-letters/list/
+    """
+    from .models import CoverLetter
+    
+    try:
+        cover_letters = CoverLetter.objects.filter(user=request.user)
+        
+        cover_letters_data = [{
+            'id': cl.id,
+            'title': cl.title,
+            'role': cl.role,
+            'company_name': cl.company_name,
+            'content': cl.content,
+            'template_style': cl.template_style,
+            'font_family': cl.font_family,
+            'font_size': cl.font_size,
+            'text_align': cl.text_align,
+            'created_at': cl.created_at.isoformat(),
+            'updated_at': cl.updated_at.isoformat(),
+        } for cl in cover_letters]
+        
+        return Response({
+            'cover_letters': cover_letters_data,
+            'count': len(cover_letters_data)
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': f'Failed to list cover letter drafts: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_cover_letter_draft(request, cover_letter_id):
+    """
+    Get a specific cover letter draft.
+    
+    GET /api/resume/cover-letters/<id>/
+    """
+    from .models import CoverLetter
+    
+    try:
+        cover_letter = CoverLetter.objects.get(id=cover_letter_id, user=request.user)
+        
+        return Response({
+            'id': cover_letter.id,
+            'title': cover_letter.title,
+            'role': cover_letter.role,
+            'company_name': cover_letter.company_name,
+            'content': cover_letter.content,
+            'template_style': cover_letter.template_style,
+            'font_family': cover_letter.font_family,
+            'font_size': cover_letter.font_size,
+            'text_align': cover_letter.text_align,
+            'created_at': cover_letter.created_at.isoformat(),
+            'updated_at': cover_letter.updated_at.isoformat(),
+        }, status=status.HTTP_200_OK)
+        
+    except CoverLetter.DoesNotExist:
+        return Response({
+            'error': 'Cover letter not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_cover_letter_draft(request, cover_letter_id):
+    """
+    Update a cover letter draft.
+    
+    PUT /api/resume/cover-letters/<id>/update/
+    """
+    from .models import CoverLetter
+    
+    try:
+        cover_letter = CoverLetter.objects.get(id=cover_letter_id, user=request.user)
+        
+        # Update fields if provided
+        if 'title' in request.data:
+            cover_letter.title = request.data['title']
+        if 'role' in request.data:
+            cover_letter.role = request.data['role']
+        if 'company_name' in request.data:
+            cover_letter.company_name = request.data['company_name']
+        if 'content' in request.data:
+            cover_letter.content = request.data['content']
+        if 'template_style' in request.data:
+            cover_letter.template_style = request.data['template_style']
+        if 'font_family' in request.data:
+            cover_letter.font_family = request.data['font_family']
+        if 'font_size' in request.data:
+            cover_letter.font_size = request.data['font_size']
+        if 'text_align' in request.data:
+            cover_letter.text_align = request.data['text_align']
+        
+        cover_letter.save()
+        
+        return Response({
+            'message': 'Cover letter updated successfully',
+            'cover_letter': {
+                'id': cover_letter.id,
+                'title': cover_letter.title,
+                'role': cover_letter.role,
+                'company_name': cover_letter.company_name,
+                'content': cover_letter.content,
+                'template_style': cover_letter.template_style,
+                'font_family': cover_letter.font_family,
+                'font_size': cover_letter.font_size,
+                'text_align': cover_letter.text_align,
+                'created_at': cover_letter.created_at.isoformat(),
+                'updated_at': cover_letter.updated_at.isoformat(),
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except CoverLetter.DoesNotExist:
+        return Response({
+            'error': 'Cover letter not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_cover_letter_draft(request, cover_letter_id):
+    """
+    Delete a cover letter draft.
+    
+    DELETE /api/resume/cover-letters/<id>/delete/
+    """
+    from .models import CoverLetter
+    
+    try:
+        cover_letter = CoverLetter.objects.get(id=cover_letter_id, user=request.user)
+        cover_letter.delete()
+        
+        return Response({
+            'message': 'Cover letter deleted successfully'
+        }, status=status.HTTP_200_OK)
+        
+    except CoverLetter.DoesNotExist:
+        return Response({
+            'error': 'Cover letter not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
