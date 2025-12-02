@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import resumeService, { Resume } from '../services/resume.service';
+import coverLetterService from '../services/coverLetter.service';
 import api from '../services/api';
 
 
@@ -21,6 +22,7 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [editedCoverLetter, setEditedCoverLetter] = useState('');
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   
   // Template selection state
   const [selectedTemplate, setSelectedTemplate] = useState<'professional' | 'modern' | 'creative' | 'header'>('professional');
@@ -160,6 +162,39 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     
     pdfWindow.document.write(htmlContent);
     pdfWindow.document.close();
+  };
+
+  const handleSaveDraft = async () => {
+    if (!editedCoverLetter.trim()) {
+      alert('Cannot save an empty cover letter');
+      return;
+    }
+
+    const title = role && companyName 
+      ? `${role} at ${companyName}`
+      : role || companyName || 'Cover Letter Draft';
+
+    setIsSavingDraft(true);
+    try {
+      await coverLetterService.saveDraft({
+        title,
+        role,
+        company_name: companyName,
+        content: editedCoverLetter,
+        template_style: selectedTemplate,
+        font_family: fontFamily,
+        font_size: fontSize,
+        text_align: textAlign,
+        resume_id: uploadedResume?.id,
+      });
+
+      alert('✓ Cover letter draft saved successfully!');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to save draft';
+      alert(`Failed to save draft: ${errorMessage}`);
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   const applyFormatting = (format: 'bold' | 'italic' | 'underline') => {
@@ -929,6 +964,16 @@ const CoverLetterMaker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
 
           <div style={styles.editorActions}>
+            <button 
+              onClick={handleSaveDraft}
+              disabled={isSavingDraft}
+              style={{
+                ...styles.actionButtonPrimary,
+                ...(isSavingDraft ? styles.actionButtonDisabled : {})
+              }}
+            >
+              {isSavingDraft ? '💾 Saving...' : '💾 Save Draft'}
+            </button>
             <button onClick={handleCopyToClipboard} style={styles.actionButton}>
               📋 Copy to Clipboard
             </button>
@@ -1285,6 +1330,25 @@ const styles: { [key: string]: React.CSSProperties } = {
    display: 'flex',
    gap: '12px',
    flexWrap: 'wrap',
+ },
+ actionButtonPrimary: {
+   flex: 1,
+   minWidth: '150px',
+   padding: '12px 24px',
+   backgroundColor: '#48bb78',
+   color: 'white',
+   border: 'none',
+   borderRadius: '8px',
+   fontWeight: '600',
+   fontSize: '15px',
+   cursor: 'pointer',
+   transition: 'all 0.2s',
+   boxShadow: '0 4px 12px rgba(72, 187, 120, 0.3)',
+ },
+ actionButtonDisabled: {
+   backgroundColor: '#cbd5e0',
+   cursor: 'not-allowed',
+   boxShadow: 'none',
  },
  actionButton: {
    flex: 1,

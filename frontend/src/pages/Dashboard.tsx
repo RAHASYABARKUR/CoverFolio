@@ -1,19 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PortfolioMaker from '../components/PortfolioMaker';
 import CoverLetterMaker from '../components/CoverLetterMaker';
+import CoverLetterDrafts from '../components/CoverLetterDrafts';
 import PortfolioManager from '../components/PortfolioManager';
 import PortfolioEditor from '../components/PortfolioEditor';
 import ProfileFormsEditor from '../components/ProfileFormsEditor';
 import Profile from '../components/Profile';
+import coverLetterService from '../services/coverLetter.service';
 
 
 const Dashboard: React.FC = () => {
  const { user, logout } = useAuth();
  const navigate = useNavigate();
  const location = useLocation();
+ const [coverLetterCount, setCoverLetterCount] = useState(0);
 
+ // Load cover letter count on mount
+ useEffect(() => {
+   loadCoverLetterCount();
+ }, []);
+
+ const loadCoverLetterCount = async () => {
+   try {
+     const count = await coverLetterService.getCount();
+     setCoverLetterCount(count);
+   } catch (error) {
+     console.error('Failed to load cover letter count:', error);
+   }
+ };
 
  const handleLogout = () => {
    logout();
@@ -29,6 +45,7 @@ const Dashboard: React.FC = () => {
    if (location.pathname === '/dashboard/resumes') return 'resumes';
    if (location.pathname.startsWith('/dashboard/portfolio/preview/')) return 'preview';
    if (location.pathname === '/dashboard/coverletter') return 'coverletter';
+   if (location.pathname === '/dashboard/coverletter/drafts') return 'coverletter-drafts';
    return 'home';
  };
 
@@ -68,6 +85,7 @@ const Dashboard: React.FC = () => {
      </div>
      <div
        style={styles.statItem}
+       onClick={() => navigate('/dashboard/coverletter/drafts')}
        onMouseEnter={(e) => {
          e.currentTarget.style.transform = 'translateY(-4px)';
          e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
@@ -81,7 +99,7 @@ const Dashboard: React.FC = () => {
          <div style={styles.statIcon}>📝</div>
        </div>
        <div>
-         <div style={styles.statValue}>0</div>
+         <div style={styles.statValue}>{coverLetterCount}</div>
          <div style={styles.statLabel}>Cover Letters</div>
        </div>
      </div>
@@ -260,6 +278,7 @@ const Dashboard: React.FC = () => {
       {currentView === 'resumes' && <PortfolioManager onBack={() => navigate('/dashboard')} />}
       {currentView === 'preview' && <PortfolioEditor />}
       {currentView === 'coverletter' && <CoverLetterMaker onBack={() => navigate('/dashboard')} />}
+      {currentView === 'coverletter-drafts' && <CoverLetterDrafts onBack={() => navigate('/dashboard')} />}
     </main>
   </div>
  );
