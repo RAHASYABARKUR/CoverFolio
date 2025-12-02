@@ -22,9 +22,13 @@ const Profile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       // Fetch user's resumes
       const resumes = await resumeService.listResumes();
       
-      // Get the most recent resume as profile resume
+      // Get the most recent resume by created_at timestamp
       if (resumes.length > 0) {
-        const latestResume = resumes[resumes.length - 1];
+        // Sort by created_at in descending order (most recent first)
+        const sortedResumes = [...resumes].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        const latestResume = sortedResumes[0];
         setProfileResume(latestResume);
       }
     } catch (err: any) {
@@ -56,12 +60,13 @@ const Profile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       // Upload resume - backend will auto-populate portfolio
       const result = await resumeService.uploadResume(selectedFile);
       
-      setProfileResume(result);
       setSelectedFile(null);
       setSuccessMessage('Resume uploaded successfully! Your profile has been updated.');
       
-      // Reload portfolio data
-      await loadProfileData();
+      // Wait a moment for backend processing to complete, then reload
+      setTimeout(async () => {
+        await loadProfileData();
+      }, 500);
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'Failed to upload resume';
       setError(msg);
