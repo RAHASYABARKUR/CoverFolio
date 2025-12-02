@@ -13,7 +13,6 @@ from .serializers import ResumeSerializer
 from portfolio.views import populate_from_resume
 from rest_framework.test import APIRequestFactory,force_authenticate
 # from .text_extractor import extract_text_from_pdf_better
-from .parser import parse_resume_llama,extract_text_from_pdf
 from .resume_parser_gemini import parse_resume_gemini
 # from portfolio.normalize import clean_structured
 # from .parser import parse,extract_text_from_pdf
