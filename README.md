@@ -31,7 +31,10 @@ python manage.py runserver
 #### Terminal 2 - Frontend
 ```bash
 cd frontend
-npm install && npm start
+npm install
+npm install jszip file-saver
+npm install --save-dev @types/jszip @types/file-saver
+npm start
 ```
 
 
