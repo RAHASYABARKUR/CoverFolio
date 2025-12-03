@@ -73,9 +73,16 @@ function mapPortfolioToTemplateData(p: Portfolio | any): any {
   );
   const contact = p.contacts || p.contact || {};
 
-  // --- about / overview ---
+  // ---- about / overview ----
+  const firstLast = [profile.first_name, profile.last_name]
+    .map((x) => cleanStr(x))
+    .filter(Boolean);
+  const computedName =
+    cleanStr(profile.full_name || profile.name) ||
+    (firstLast.length ? firstLast.join(" ") : "");
+
   const about = {
-    name: cleanStr(profile.full_name || profile.name),
+    name: computedName,
     headline: cleanStr(
       profile.headline || profile.title || profile.tagline || ""
     ),
@@ -89,7 +96,7 @@ function mapPortfolioToTemplateData(p: Portfolio | any): any {
     email: cleanStr(profile.email || profile.contact_email),
   };
 
-  // --- experience ---
+  // ---- experience ----
   const experience = exp.map((job: any) => {
     const role =
       job.role ||
@@ -139,45 +146,42 @@ function mapPortfolioToTemplateData(p: Portfolio | any): any {
     };
   });
 
-  // --- projects ---
-  const mappedProjects = projects.map((p: any) => {
-    const techArray: string[] = safeArray(p.technologies || p.tech || []);
+  // ---- projects ----
+  const mappedProjects = projects.map((proj: any) => {
+    const techArray: string[] = safeArray(proj.technologies || proj.tech || []);
     const tech =
       techArray.length > 0
         ? techArray.map(cleanStr).filter(Boolean).join(", ")
-        : cleanStr(p.tech_stack || p.stack || "");
+        : cleanStr(proj.tech_stack || proj.stack || "");
 
     return {
-      name: cleanStr(p.name || p.title),
-      description: cleanStr(p.description || p.summary),
+      name: cleanStr(proj.name || proj.title),
+      description: cleanStr(proj.description || proj.summary),
       tech,
       link: cleanStr(
-        p.link ||
-          p.github_url ||
-          p.repo_url ||
-          p.demo_url ||
-          p.url
+        proj.link ||
+          proj.github_url ||
+          proj.repo_url ||
+          proj.demo_url ||
+          proj.url
       ),
     };
   });
 
-  // --- skills ---
+  // ---- skills ----
   const skillsItems: string[] = skillsRaw
     .map((s: any) => {
       if (typeof s === "string") return cleanStr(s);
       if (s && typeof s === "object") {
         return cleanStr(
-          s.name ||
-            s.label ||
-            s.skill ||
-            s.title
+          s.name || s.label || s.skill || s.title
         );
       }
       return "";
     })
     .filter(Boolean);
 
-  // --- overrides for education/certs/etc. (one line per item) ---
+  // ---- overrides for education/certs/etc. (one line per item) ----
   const educationOverride = education.map((e: any) => {
     const degree = cleanStr(e.degree || e.title);
     const field = cleanStr(e.field || e.field_of_study || e.major);
@@ -241,13 +245,58 @@ function mapPortfolioToTemplateData(p: Portfolio | any): any {
     return parts.join(" — ");
   });
 
-  const hobbiesOverride = hobbies.map((h: any) => {
-    if (typeof h === "string") return cleanStr(h);
-    if (h && typeof h === "object") {
-      return cleanStr(h.name || h.title || h.label);
-    }
-    return "";
-  }).filter(Boolean);
+  const hobbiesOverride = hobbies
+    .map((h: any) => {
+      if (typeof h === "string") return cleanStr(h);
+      if (h && typeof h === "object") {
+        return cleanStr(h.name || h.title || h.label);
+      }
+      return "";
+    })
+    .filter(Boolean);
+
+  // ---- narrative section defaults (so editor + template stay in sync) ----
+  const overviewFromProfile = cleanStr(
+    profile.portfolio_overview ||
+      profile.summary ||
+      profile.bio ||
+      profile.about ||
+      ""
+  );
+
+  const defaultSections = {
+    overview:
+      overviewFromProfile ||
+      "I enjoy taking ideas from rough sketch to production-ready systems: understanding requirements, designing clean APIs, and delivering maintainable code.",
+    whatIWorkOn: [
+      "Building backend services, REST/GraphQL APIs, and data-heavy pipelines.",
+      "Designing front-end experiences with modern frameworks and clean UI patterns.",
+      "Working with cloud infrastructure (AWS/GCP), containers, and CI/CD.",
+    ],
+    engineeringPhilosophy: [
+      "Ship small, testable changes and iterate quickly.",
+      "Favor readability and clear ownership over clever one-liners.",
+      "Use metrics, logs, and user feedback to guide improvements.",
+    ],
+    howIWorkSteps: [
+      "Discover & Design|Clarify the problem, edge cases, and constraints. Propose a simple architecture and data model.",
+      "Build & Review|Implement in small pieces, write tests, and collaborate through code reviews.",
+      "Deploy & Learn|Monitor in production, gather metrics, and iterate on performance and UX.",
+    ],
+    experienceIntro:
+      "Teams I've worked with and problems I've helped solve.",
+    footerSubheading:
+      "I’m always happy to chat about roles, internships, or interesting problems to solve.",
+  };
+
+  const sections: any = {
+    ...defaultSections,
+    educationOverride,
+    certificationsOverride,
+    publicationsOverride,
+    awardsOverride,
+    hobbiesOverride,
+  };
 
   return {
     about,
@@ -262,19 +311,12 @@ function mapPortfolioToTemplateData(p: Portfolio | any): any {
     awards,
     hobbies,
     contact,
-
-    sections: {
-      educationOverride,
-      certificationsOverride,
-      publicationsOverride,
-      awardsOverride,
-      hobbiesOverride,
-    },
+    sections,
     headings: {},
   };
 }
 
-/* ---------- inline styles (same as before) ---------- */
+/* ---------- inline styles ---------- */
 
 const containerStyle: CSSProperties = {
   display: "flex",
@@ -399,7 +441,7 @@ export default function Editor() {
 
         const mapped = mapPortfolioToTemplateData(p);
 
-        // Don't overwrite if user already edited
+        // Don't overwrite if user already edited / loaded a draft
         setData((prev: any) => {
           if (prev && Object.keys(prev).length > 0) return prev;
           return mapped;
