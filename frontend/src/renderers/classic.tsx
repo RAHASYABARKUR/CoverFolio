@@ -34,8 +34,34 @@ export default function ClassicRenderer({ data, theme }: Props) {
     ["--accent" as any]: accent,
   };
 
-  const name = about.name || "Your Name";
-  const role = about.headline || "Software Engineer";
+  // ---------- hero identity (FIXED) ----------
+
+  // Try multiple possible fields for the name so we don't get stuck with "Your Name"
+  const rawName = (
+    about.name ||
+    (about as any).full_name ||
+    (about as any).fullName ||
+    ""
+  )
+    .toString()
+    .trim();
+
+  const name =
+    rawName ||
+    (about.headline ? String(about.headline).trim() : "") ||
+    "Your Name";
+
+  // Use headline / title / role as subtitle,
+  // but avoid duplicating the big hero name if they're the same.
+  const roleSource =
+    (about.headline as string | undefined) ||
+    ((about as any).title as string | undefined) ||
+    ((about as any).role as string | undefined) ||
+    "";
+
+  const role =
+    roleSource && roleSource.trim() !== name ? roleSource : "Software Engineer";
+
   const intro =
     about.summary ||
     "I build reliable, user-focused software products, from backend APIs and cloud infrastructure to polished front-end experiences.";
@@ -440,7 +466,11 @@ export default function ClassicRenderer({ data, theme }: Props) {
                 {publications.map((p: any, i: number) => {
                   const title = p.title || p.name || "";
                   const venue =
-                    p.venue || p.journal || p.conference || p.publisher || "";
+                    p.venue ||
+                    p.journal ||
+                    p.conference ||
+                    p.publisher ||
+                    "";
                   const year = p.year || p.date || "";
                   return (
                     <li key={i}>
@@ -473,7 +503,11 @@ export default function ClassicRenderer({ data, theme }: Props) {
                   const category =
                     a.category || a.type || a.label || a.tag || "";
                   const org =
-                    a.org || a.organization || a.company || a.issuer || "";
+                    a.org ||
+                    a.organization ||
+                    a.company ||
+                    a.issuer ||
+                    "";
                   const date = a.date || a.year || "";
                   return (
                     <li key={i}>
@@ -553,7 +587,9 @@ export default function ClassicRenderer({ data, theme }: Props) {
         {/* FOOTER */}
         <footer className="ad-footer">
           <div>{name}</div>
-          <div className="ad-footer-right">© {new Date().getFullYear()}</div>
+          <div className="ad-footer-right">
+            © {new Date().getFullYear()}
+          </div>
         </footer>
       </div>
     </div>

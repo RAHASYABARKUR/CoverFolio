@@ -8,12 +8,23 @@ const TemplateGallery: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+  // 🔹 Read resumeId from the current URL (?resumeId=...)
+  const qs = new URLSearchParams(window.location.search);
+  const resumeId = qs.get("resumeId") || "";
+
   useEffect(() => {
     listTemplates()
       .then(setItems)
       .catch((e) => setErr(String(e)))
       .finally(() => setLoading(false));
   }, []);
+
+  // Helper to open the editor with template + optional resumeId
+  function openEditor(templateKey: string) {
+    const base = `/editor?template=${templateKey}`;
+    const url = resumeId ? `${base}&resumeId=${resumeId}` : base;
+    window.location.assign(url);
+  }
 
   return (
     <div style={styles.container}>
@@ -48,7 +59,9 @@ const TemplateGallery: React.FC = () => {
               >
                 <div style={styles.cardHeader}>
                   <div style={styles.cardIconWrap}>
-                    <div style={styles.cardIcon}>{t.key === "modern" ? "🧩" : "📄"}</div>
+                    <div style={styles.cardIcon}>
+                      {t.key === "modern" ? "🧩" : "📄"}
+                    </div>
                   </div>
                   <h2 style={styles.cardTitle}>{t.name}</h2>
                 </div>
@@ -67,13 +80,16 @@ const TemplateGallery: React.FC = () => {
                     style={styles.primaryButton}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-3px)";
-                      e.currentTarget.style.boxShadow = "0 12px 30px rgba(102,126,234,0.35)";
+                      e.currentTarget.style.boxShadow =
+                        "0 12px 30px rgba(102,126,234,0.35)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 8px 18px rgba(102,126,234,0.25)";
+                      e.currentTarget.style.boxShadow =
+                        "0 8px 18px rgba(102,126,234,0.25)";
                     }}
-                    onClick={() => window.location.assign(`/editor?template=${t.key}`)}
+                    // 🔹 This now respects resumeId if present
+                    onClick={() => openEditor(t.key)}
                   >
                     Use {t.name}
                   </button>
@@ -93,7 +109,9 @@ const TemplateGallery: React.FC = () => {
         )}
 
         <div style={styles.footerHint}>
-          Not sure where to start? Try <span style={styles.accent}>Classic</span> for a clean resume-to-portfolio layout.
+          Not sure where to start? Try{" "}
+          <span style={styles.accent}>Classic</span> for a clean resume-to-portfolio
+          layout.
         </div>
       </div>
     </div>
@@ -160,7 +178,12 @@ const styles: { [k: string]: React.CSSProperties } = {
   },
   cardIcon: { fontSize: 24 },
   cardTitle: { fontSize: 20, fontWeight: 800, margin: 0 },
-  cardText: { color: "#4a5568", fontSize: 14, lineHeight: 1.6, margin: "6px 0 14px" },
+  cardText: {
+    color: "#4a5568",
+    fontSize: 14,
+    lineHeight: 1.6,
+    margin: "6px 0 14px",
+  },
   preview: {
     width: "100%",
     height: 140,
