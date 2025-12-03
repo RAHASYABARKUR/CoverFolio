@@ -22,12 +22,19 @@ export default function ModernRenderer({ data, theme }: Props) {
     ["--accent" as any]: accent,
   };
 
-  const name = about.name || "Your Name";
-  const role = about.headline || "Product / Software Engineer";
+  // ----- name / role / intro (synced with Classic behavior) -----
+  const rawName =
+    about.name || about.full_name || about.fullName || "";
+  const rawRole = about.headline || about.role || "";
+
+  const name = rawName || rawRole || "Your Name";
+  const role = rawRole || "Product / Software Engineer";
+
   const intro =
     about.summary ||
     "I design and build thoughtful digital experiences across web, cloud, and product surfaces.";
 
+  // ----- headings -----
   const H = {
     about: headings.about || "About",
     projects: headings.projects || "Projects",
@@ -36,6 +43,17 @@ export default function ModernRenderer({ data, theme }: Props) {
     skills: headings.techStack || "Skills",
     contact: headings.contact || "Contact",
   };
+
+  // ----- editor overrides for education -----
+  const educationOverride: string[] = sections.educationOverride || [];
+  const hasEducationOverride = educationOverride.length > 0;
+
+  // choose which education source to render:
+  // - if user edited override text in Editor -> use that
+  // - else use structured education array from portfolio
+  const hasStructuredEducation = education && education.length > 0;
+
+  const email = contactInfo.email || about.email;
 
   return (
     <div className="mod-page" style={style}>
@@ -164,7 +182,18 @@ export default function ModernRenderer({ data, theme }: Props) {
             <header className="mod-section-header small">
               <h2>{H.education}</h2>
             </header>
-            {education.length ? (
+
+            {/* If user typed custom education lines in Editor, render those.
+                Otherwise fall back to structured education array. */}
+            {hasEducationOverride ? (
+              <ul className="mod-list-plain">
+                {educationOverride.map((line, i) => (
+                  <li key={i}>
+                    <div className="mod-bold-line">{line}</div>
+                  </li>
+                ))}
+              </ul>
+            ) : hasStructuredEducation ? (
               <ul className="mod-list-plain">
                 {education.map((e: any, i: number) => {
                   const school =
@@ -220,8 +249,8 @@ export default function ModernRenderer({ data, theme }: Props) {
           </header>
           <div className="mod-contact-grid">
             <div>
-              {about.email && (
-                <div className="mod-contact-line">{about.email}</div>
+              {email && (
+                <div className="mod-contact-line">{email}</div>
               )}
               {contactInfo.phone && (
                 <div className="mod-contact-line">

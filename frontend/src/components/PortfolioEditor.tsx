@@ -71,8 +71,15 @@ const PortfolioEditor: React.FC = () => {
  };
 
   const handleChooseTemplate = () => {
-    navigate('/templates');
+    if (resumeId) {
+      // include resumeId as query param so TemplateGallery can forward it to /editor
+      navigate(`/templates?resumeId=${resumeId}`);
+    } else {
+      // fallback – still works, just no binding to a specific resume
+      navigate('/templates');
+    }
   };
+
 
  const handlePublish = () => {
    alert('Portfolio published! (This feature is coming soon)');

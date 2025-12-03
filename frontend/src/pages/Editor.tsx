@@ -9,95 +9,309 @@ import {
 
 import ClassicRenderer from "../renderers/classic";
 import ModernRenderer from "../renderers/modern";
-import resumeService, { Resume } from "../services/resume.service";
+import portfolioService from "../services/portfolio.service";
+import type { Portfolio } from "../types/portfolio.types";
+import { downloadStaticPortfolioZip } from "../utils/staticExport";
 
 /* ---------- helpers ---------- */
 
-function cleanStr(v?: string | null): string {
-  if (!v) return "";
-  const trimmed = v.trim();
-  if (trimmed.toUpperCase() === "N/A") return "";
-  return trimmed;
+function cleanStr(v: any): string {
+  if (v === null || v === undefined) return "";
+
+  if (typeof v === "string") {
+    const trimmed = v.trim();
+    if (trimmed.toUpperCase() === "N/A") return "";
+    return trimmed;
+  }
+
+  if (typeof v === "number") {
+    return String(v);
+  }
+
+  return "";
 }
 
 function safeArray(val: any): any[] {
   return Array.isArray(val) ? val : [];
 }
 
-function mapResumeToTemplateData(resume: Resume): any {
-  const s: any = resume.structured_data;
-  if (!s) return {};
+// Map data from Portfolio forms into the template data structure
+function mapPortfolioToTemplateData(p: Portfolio | any): any {
+  if (!p) return {};
 
-  const exp = safeArray(s.experience);
-  const projects = safeArray(s.projects);
-  const skills = safeArray(s.skills);
+  const profile = p.profile || p.overview || p || {};
+  const exp = safeArray(
+    p.experiences ||
+      p.experience_entries ||
+      p.experience ||
+      p.work_experience ||
+      []
+  );
+  const projects = safeArray(
+    p.projects || p.project_items || p.project_entries || []
+  );
+  const skillsRaw = safeArray(
+    p.skills || p.skill_items || p.skill_entries || []
+  );
+  const education = safeArray(
+    p.education || p.education_entries || p.schools || []
+  );
+  const certifications = safeArray(
+    p.certifications || p.certificate_entries || []
+  );
+  const publications = safeArray(
+    p.publications_and_patents ||
+      p.publications ||
+      p.publication_entries ||
+      []
+  );
+  const awards = safeArray(
+    p.accomplishments_awards || p.awards || p.award_entries || []
+  );
+  const hobbies = safeArray(
+    p.hobbies_and_interests || p.hobbies || p.hobby_entries || []
+  );
+  const contact = p.contacts || p.contact || {};
 
-  const education = safeArray(s.education);
-  const certifications = safeArray(s.certifications);
-  const publications =
-    safeArray(s.publications_and_patents) || safeArray(s.publications);
-  const awards =
-    safeArray(s.accomplishments_awards) || safeArray(s.awards);
-  const hobbies =
-    safeArray(s.hobbies_and_interests) || safeArray(s.hobbies);
-  const contact = s.contact || {};
+  // ---- about / overview ----
+  const firstLast = [profile.first_name, profile.last_name]
+    .map((x) => cleanStr(x))
+    .filter(Boolean);
+  const computedName =
+    cleanStr(profile.full_name || profile.name) ||
+    (firstLast.length ? firstLast.join(" ") : "");
+
+  const about = {
+    name: computedName,
+    headline: cleanStr(
+      profile.headline || profile.title || profile.tagline || ""
+    ),
+    summary: cleanStr(profile.summary || profile.bio || profile.about || ""),
+    links: {
+      github: cleanStr(profile.github_url || profile.github),
+      linkedin: cleanStr(profile.linkedin_url || profile.linkedin),
+    },
+    location: cleanStr(profile.location || profile.city || profile.country),
+    website: cleanStr(profile.website || profile.portfolio_url),
+    email: cleanStr(profile.email || profile.contact_email),
+  };
+
+  // ---- experience ----
+  const experience = exp.map((job: any) => {
+    const role =
+      job.role ||
+      job.title ||
+      job.position ||
+      job.job_title ||
+      "Role";
+    const company =
+      job.company ||
+      job.company_name ||
+      job.org ||
+      job.organization ||
+      "";
+    const location = job.location || job.city || "";
+
+    const startRaw =
+      job.start_date || job.start || job.from || job.start_year;
+    const endRaw =
+      job.end_date ||
+      job.end ||
+      job.to ||
+      job.end_year ||
+      (job.is_current ? "Present" : "");
+
+    const start = cleanStr(startRaw);
+    const end = cleanStr(endRaw);
+
+    let years = cleanStr(
+      job.years || job.dates || job.date_range || job.date || ""
+    );
+    if (!years && (start || end)) {
+      years = [start, end].filter(Boolean).join(" - ");
+    }
+
+    const description = cleanStr(
+      job.description || job.summary || job.details || ""
+    );
+
+    return {
+      role: cleanStr(role),
+      company: cleanStr(company),
+      location: cleanStr(location),
+      start,
+      end,
+      years,
+      description,
+    };
+  });
+
+  // ---- projects ----
+  const mappedProjects = projects.map((proj: any) => {
+    const techArray: string[] = safeArray(proj.technologies || proj.tech || []);
+    const tech =
+      techArray.length > 0
+        ? techArray.map(cleanStr).filter(Boolean).join(", ")
+        : cleanStr(proj.tech_stack || proj.stack || "");
+
+    return {
+      name: cleanStr(proj.name || proj.title),
+      description: cleanStr(proj.description || proj.summary),
+      tech,
+      link: cleanStr(
+        proj.link ||
+          proj.github_url ||
+          proj.repo_url ||
+          proj.demo_url ||
+          proj.url
+      ),
+    };
+  });
+
+  // ---- skills ----
+  const skillsItems: string[] = skillsRaw
+    .map((s: any) => {
+      if (typeof s === "string") return cleanStr(s);
+      if (s && typeof s === "object") {
+        return cleanStr(
+          s.name || s.label || s.skill || s.title
+        );
+      }
+      return "";
+    })
+    .filter(Boolean);
+
+  // ---- overrides for education/certs/etc. (one line per item) ----
+  const educationOverride = education.map((e: any) => {
+    const degree = cleanStr(e.degree || e.title);
+    const field = cleanStr(e.field || e.field_of_study || e.major);
+    const school = cleanStr(
+      e.school ||
+        e.school_name ||
+        e.institution ||
+        e.organization ||
+        ""
+    );
+    const start = cleanStr(e.start_year || e.start || "");
+    const end = cleanStr(e.end_year || e.end || "");
+    let years = cleanStr(e.years || e.dates || e.date || "");
+    if (!years && (start || end)) {
+      years = [start, end].filter(Boolean).join(" - ");
+    }
+
+    const head = [degree, field].filter(Boolean).join(" · ");
+    const parts = [head, school, years].filter(Boolean);
+    return parts.join(" — ");
+  });
+
+  const certificationsOverride = certifications.map((c: any) => {
+    const name = cleanStr(c.name || c.title);
+    const org = cleanStr(
+      c.issuer ||
+        c.organization ||
+        c.company ||
+        c.issuing_organization
+    );
+    const date = cleanStr(
+      c.date || c.year || c.issue_date || c.issued_at || ""
+    );
+    const parts = [name, org, date].filter(Boolean);
+    return parts.join(" — ");
+  });
+
+  const publicationsOverride = publications.map((pub: any) => {
+    const title = cleanStr(pub.title || pub.name);
+    const venue = cleanStr(
+      pub.venue ||
+        pub.journal ||
+        pub.conference ||
+        pub.publisher ||
+        pub.publication
+    );
+    const year = cleanStr(pub.year || pub.date);
+    const parts = [title, venue, year].filter(Boolean);
+    return parts.join(" — ");
+  });
+
+  const awardsOverride = awards.map((a: any) => {
+    const title = cleanStr(a.title || a.name);
+    const cat = cleanStr(a.category || a.type || a.label || a.tag);
+    const org = cleanStr(
+      a.org || a.organization || a.company || a.issuer
+    );
+    const date = cleanStr(a.date || a.year);
+    const head = [title, cat].filter(Boolean).join(" · ");
+    const parts = [head, org, date].filter(Boolean);
+    return parts.join(" — ");
+  });
+
+  const hobbiesOverride = hobbies
+    .map((h: any) => {
+      if (typeof h === "string") return cleanStr(h);
+      if (h && typeof h === "object") {
+        return cleanStr(h.name || h.title || h.label);
+      }
+      return "";
+    })
+    .filter(Boolean);
+
+  // ---- narrative section defaults (so editor + template stay in sync) ----
+  const overviewFromProfile = cleanStr(
+    profile.portfolio_overview ||
+      profile.summary ||
+      profile.bio ||
+      profile.about ||
+      ""
+  );
+
+  const defaultSections = {
+    overview:
+      overviewFromProfile ||
+      "I enjoy taking ideas from rough sketch to production-ready systems: understanding requirements, designing clean APIs, and delivering maintainable code.",
+    whatIWorkOn: [
+      "Building backend services, REST/GraphQL APIs, and data-heavy pipelines.",
+      "Designing front-end experiences with modern frameworks and clean UI patterns.",
+      "Working with cloud infrastructure (AWS/GCP), containers, and CI/CD.",
+    ],
+    engineeringPhilosophy: [
+      "Ship small, testable changes and iterate quickly.",
+      "Favor readability and clear ownership over clever one-liners.",
+      "Use metrics, logs, and user feedback to guide improvements.",
+    ],
+    howIWorkSteps: [
+      "Discover & Design|Clarify the problem, edge cases, and constraints. Propose a simple architecture and data model.",
+      "Build & Review|Implement in small pieces, write tests, and collaborate through code reviews.",
+      "Deploy & Learn|Monitor in production, gather metrics, and iterate on performance and UX.",
+    ],
+    experienceIntro:
+      "Teams I've worked with and problems I've helped solve.",
+    footerSubheading:
+      "I’m always happy to chat about roles, internships, or interesting problems to solve.",
+  };
+
+  const sections: any = {
+    ...defaultSections,
+    educationOverride,
+    certificationsOverride,
+    publicationsOverride,
+    awardsOverride,
+    hobbiesOverride,
+  };
 
   return {
-    about: {
-      name: cleanStr(s.name),
-      headline: cleanStr(s.headline || s.title),
-      summary: cleanStr(s.summary || s.objective || ""),
-      links: {
-        github: cleanStr(s.github),
-        linkedin: cleanStr(s.linkedin),
-      },
-      location: cleanStr(s.location),
-      website: cleanStr(s.website),
-      email: cleanStr(s.email),
-    },
-
-    experience: exp.map((job: any) => {
-      const years = cleanStr(job.years || job.dates || job.date);
-      let start = "";
-      let end = "";
-      if (years && years.includes("-")) {
-        const [a, b] = years.split("-");
-        start = cleanStr(a);
-        end = cleanStr(b);
-      }
-
-      return {
-        role: cleanStr(job.role || job.title),
-        company: cleanStr(job.company || job.org || job.organization),
-        location: cleanStr(job.location),
-        start,
-        end,
-        description: cleanStr(job.role_summary || job.description),
-        years,
-      };
-    }),
-
-    projects: projects.map((p: any) => ({
-      name: cleanStr(p.title || p.name),
-      description: cleanStr(p.description),
-      tech: Array.isArray(p.technologies)
-        ? p.technologies.map(cleanStr).filter(Boolean).join(", ")
-        : cleanStr(p.tech_stack),
-      link: cleanStr(p.link || p.github || p.demo),
-    })),
-
+    about,
+    experience,
+    projects: mappedProjects,
     skills: {
-      items: skills.map(cleanStr).filter(Boolean),
+      items: skillsItems,
     },
-
     education,
     certifications,
     publications,
     awards,
     hobbies,
     contact,
-
-    sections: {},
+    sections,
     headings: {},
   };
 }
@@ -203,6 +417,7 @@ export default function Editor() {
   const qs = new URLSearchParams(window.location.search);
   const templateKey = qs.get("template") || "classic";
   const draftId = qs.get("id") || "";
+  const resumeId = qs.get("resumeId") || ""; // currently unused, but kept if you add per-resume portfolios later
 
   const [tpl, setTpl] = useState<any>(null);
   const [title, setTitle] = useState("My Portfolio");
@@ -210,7 +425,6 @@ export default function Editor() {
   const [theme, setTheme] = useState<Record<string, string>>({});
   const [publishUrl, setPublishUrl] = useState<string | null>(null);
 
-  // choose renderer based on template key
   const Renderer =
     templateKey === "modern" ? ModernRenderer : ClassicRenderer;
 
@@ -218,36 +432,27 @@ export default function Editor() {
     getTemplate(templateKey).then(setTpl);
   }, [templateKey]);
 
-  // prefill from latest resume
+  // ✅ Prefill from PORTFOLIO forms (not parsed resume)
   useEffect(() => {
-    async function loadFromLatestResume() {
+    async function loadFromPortfolio() {
       try {
-        const resp: any = await resumeService.listResumes();
-        const resumes: Resume[] = Array.isArray(resp)
-          ? resp
-          : resp?.resumes || [];
+        const p = await portfolioService.getPortfolio();
+        if (!p) return;
 
-        if (!resumes || !resumes.length) return;
+        const mapped = mapPortfolioToTemplateData(p);
 
-        const latest = [...resumes].sort((a, b) =>
-          a.created_at && b.created_at && a.created_at < b.created_at ? 1 : -1
-        )[0];
-
-        if (!latest.structured_data) return;
-
-        const mapped = mapResumeToTemplateData(latest);
-
+        // Don't overwrite if user already edited / loaded a draft
         setData((prev: any) => {
           if (prev && Object.keys(prev).length > 0) return prev;
           return mapped;
         });
       } catch (err) {
-        console.error("Failed to prefill template from resume", err);
+        console.error("Failed to prefill from portfolio forms", err);
       }
     }
 
-    loadFromLatestResume();
-  }, [draftId]);
+    loadFromPortfolio();
+  }, [resumeId]);
 
   const resolvedTheme = useMemo(
     () => ({ ...(tpl?.default_theme || {}), ...(theme || {}) }),
@@ -255,8 +460,6 @@ export default function Editor() {
   );
 
   const accentColor = resolvedTheme["--accent"] || "#6366f1";
-
-  /* ---------- sections / headings helpers ---------- */
 
   const sections = data.sections || {};
   const headings = data.headings || {};
@@ -299,7 +502,7 @@ export default function Editor() {
       window.history.replaceState(
         null,
         "",
-        `/editor?template=${templateKey}&id=${saved.id}`
+        `/editor?template=${templateKey}&id=${saved.id}&resumeId=${resumeId}`
       );
     }
     if (showAlert) alert("Saved!");
@@ -325,7 +528,7 @@ export default function Editor() {
       window.history.replaceState(
         null,
         "",
-        `/editor?template=${templateKey}&id=${id}`
+        `/editor?template=${templateKey}&id=${id}&resumeId=${resumeId}`
       );
     } else {
       saved = await updateDraft(id, payload);
@@ -768,6 +971,27 @@ export default function Editor() {
                 }}
               >
                 📋 Copy Link
+              </button>
+              <button
+                style={{
+                  marginTop: "12px",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  border: "1px solid #ddd",
+                  background: "#ffffff",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                }}
+                onClick={() => {
+                  downloadStaticPortfolioZip({
+                    templateKey,
+                    data,
+                    theme: resolvedTheme,
+                    title,
+                  });
+                }}
+              >
+                ⬇️ Download ZIP
               </button>
 
               <button
