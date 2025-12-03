@@ -10,6 +10,7 @@ import {
 import ClassicRenderer from "../renderers/classic";
 import ModernRenderer from "../renderers/modern";
 import resumeService, { Resume } from "../services/resume.service";
+import { downloadStaticPortfolioZip } from "../utils/staticExport";
 
 /* ---------- helpers ---------- */
 
@@ -350,8 +351,7 @@ export default function Editor() {
           Editor — {tpl?.name || (templateKey === "modern" ? "Modern" : "Classic")}
         </h1>
         <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
-          Tweak your portfolio content on the left, and preview it on the
-          right.
+          Tweak your portfolio content on the left, and preview it on the right.
         </p>
 
         {/* Title + About + Sections */}
@@ -749,6 +749,7 @@ export default function Editor() {
             <div
               style={{
                 display: "flex",
+                flexWrap: "wrap",
                 gap: "12px",
                 justifyContent: "center",
               }}
@@ -768,6 +769,27 @@ export default function Editor() {
                 }}
               >
                 📋 Copy Link
+              </button>
+
+              <button
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  border: "1px solid #ddd",
+                  background: "#ffffff",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                }}
+                onClick={() => {
+                  downloadStaticPortfolioZip({
+                    templateKey, // "classic" or "modern"
+                    data,
+                    theme: resolvedTheme,
+                    title,
+                  });
+                }}
+              >
+                ⬇️ Download ZIP
               </button>
 
               <button
