@@ -66,6 +66,7 @@ const App: React.FC = () => {
               element={<Dashboard />}
             />
             <Route path="/dashboard/coverletter" element={<Dashboard />} />
+            <Route path="/dashboard/coverletter/drafts" element={<Dashboard />} />
           </Route>
 
           {/* Catch all - redirect to home */}
