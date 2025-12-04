@@ -73,7 +73,7 @@ python manage.py help
 - Django 4.2 + Django REST Framework
 - PostgreSQL (Supabase cloud hosting)
 - JWT Authentication
-- Google Generative AI for parsing
+- Google Generative AI (Gemini 2.5 Flash-Lite) for parsing and AI assistant
 
 
 **Frontend:**
@@ -82,7 +82,3 @@ python manage.py help
 - Axios
 - Modern CSS
 
-## License
-
-
-MIT
