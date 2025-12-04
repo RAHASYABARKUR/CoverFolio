@@ -46,6 +46,8 @@ npm start
 - **Django Admin**: http://localhost:8000/admin
 - **Supabase Dashboard**: https://app.supabase.com/ → Table Editor
 
+### Deployment
+- https://coverfolio.onrender.com/ 
 
 ## Common Commands
 
